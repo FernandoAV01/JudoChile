@@ -156,6 +156,10 @@ class Almacen:
         self._refrescar()
         return self._ranking
 
+    def hay_datos(self) -> bool:
+        """Sin recargar nada: responde al instante aunque se estén procesando planillas."""
+        return self._ranking is not None
+
     def _refrescar(self):
         try:
             mtime = (self.data_dir / "estado.json").stat().st_mtime

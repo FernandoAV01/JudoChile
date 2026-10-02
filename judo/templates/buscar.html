@@ -23,7 +23,7 @@
     <ul class="dlist">
       {% for c in res.clubes %}
       <li><span class="title">{{ ui.club(c.club_nombre, c.club_slug) }}</span>
-        <span class="note">Puesto {{ c.lugar }} · {{ c.oro }} {{ "primer lugar" if c.oro == 1 else "primeros lugares" }} · {{ c.podios }} {{ "podio" if c.podios == 1 else "podios" }} · {{ c.deportistas }} deportistas</span></li>
+        <span class="note">Puesto {{ c.lugar }} en puntos ({{ c.puntos|pts }} pts) · {{ c.oro }} {{ "primer lugar" if c.oro == 1 else "primeros lugares" }} · {{ c.podios }} {{ "podio" if c.podios == 1 else "podios" }} · {{ c.deportistas }} deportistas</span></li>
       {% endfor %}
     </ul>
   </section>

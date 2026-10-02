@@ -14,9 +14,9 @@ El sitio es público: cualquier persona con el enlace puede verlo.
 
 | Página | Contenido |
 |---|---|
-| **Resumen** | Cifras del país, medallero de clubes, dónde gana cada club por edad, figuras (más puntos, mejor temporada, ranking internacional), categorías más dominadas y más reñidas |
+| **Resumen** | Cifras del país, clubes con más puntos, dónde gana cada club por edad, figuras (más puntos, mejor temporada, ranking internacional), categorías más dominadas y más reñidas |
 | **Categorías** | Se elige la edad (Sub 13 a Absoluta) y luego el peso. Muestra el podio y el ranking completo, con la composición del puntaje de cada deportista |
-| **Clubes** | Medallero de todos los clubes y la ficha de cada uno: sus números 1, presencia por edad y todos sus deportistas |
+| **Clubes** | Todos los clubes ordenados por puntos totales (suma del puntaje de sus deportistas) y la ficha de cada uno: sus números 1, presencia por edad y todos sus deportistas |
 | **Deportistas** | Ficha con todas sus categorías, lugar, puntaje y puntos internacionales |
 | **Cómo funciona** | Cómo se calcula el puntaje, estado de la última actualización y advertencias sobre los datos |
 
@@ -31,7 +31,7 @@ categoría. Absoluta, Sub 21 y Sub 18 traen además un ranking internacional que
 ```
 judo/
   datos.py        lee las planillas .xlsx (detecta el año solo; sirve para 2027 en adelante)
-  analisis.py     medallero de clubes, figuras, competitividad y búsquedas
+  analisis.py     clasificación de clubes, figuras, competitividad y búsquedas
   drive.py        lista y descarga la carpeta pública de Drive
   almacen.py      guarda cada versión descargada en data/ y recarga los datos cuando hay una nueva
   programador.py  revisión semanal automática
@@ -121,6 +121,6 @@ variables de entorno o en un archivo `.env` (ver [.env.example](.env.example)).
 
 - La temporada está en curso: quien aún no compite este año solo tiene su arrastre.
 - Un mismo club aparece escrito de varias formas en las planillas; el sitio unifica las variantes conocidas.
-- Los deportistas con la sigla "NAC" no tienen un club identificable y no entran al medallero de clubes.
+- Los deportistas con la sigla "NAC" no tienen un club identificable y no entran a la clasificación de clubes.
 - Las planillas no traen RUT: se considera la misma persona a quien tiene el mismo nombre completo y sexo.
 - El lugar se recalcula ordenando por puntaje, porque algunas planillas traen errores de numeración.

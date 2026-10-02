@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% block title %}{{ titulo }}{% endblock %}
-{% block head %}{% if recargar %}<meta http-equiv="refresh" content="10">{% endif %}{% endblock %}
+{% block head %}{% if recargar %}<meta http-equiv="refresh" content="{{ recargar }}">{% endif %}{% endblock %}
 {% block content %}
 <div class="page-head">
   <h1>{{ titulo }}</h1>
   <p class="lead">{{ texto }}</p>
-  {% if recargar %}<p class="caption">Esta página se recarga sola cada 10 segundos.</p>
+  {% if recargar %}<p class="caption">Esta página se recarga sola cada {{ recargar }} segundos.</p>
   {% else %}<a class="more" href="{{ url_for('vistas.resumen') }}">Volver al resumen</a>{% endif %}
 </div>
 {% endblock %}

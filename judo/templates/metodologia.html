@@ -18,7 +18,7 @@
     <div><dt>Ranking internacional</dt><dd>Puntos aparte por torneos en el extranjero. Solo en Absoluta, Sub 21 y Sub 18.</dd></div>
     <div><dt>Podio</dt><dd>Estar 1.º, 2.º o 3.º del ranking de una categoría.</dd></div>
     <div><dt>Top 8</dt><dd>Estar entre los ocho primeros de una categoría.</dd></div>
-    <div><dt>Nivel de competencia</dt><dd>Ventaja del 1.º sobre el 2.º: {{ ui.tag('Muy reñida') }} menos de 10 %, {{ ui.tag('Disputada') }} 10 a 30 %, {{ ui.tag('Dominada') }} más de 30 %.</dd></div>
+    <div><dt>Nivel de competencia</dt><dd>Ventaja del 1.º sobre el 2.º: {{ ui.tag('Muy reñida') }} menos de 10 %, {{ ui.tag('Disputada') }} 10 a 30 %, {{ ui.tag('Dominada') }} más de 30 %. {{ ui.tag('Sin rivales') }} hay un solo deportista.</dd></div>
   </dl>
 </section>
 
@@ -59,7 +59,7 @@
     <ul class="dlist">
       <li><span class="title">La temporada está en curso</span><span class="meta">Quien aún no compite este año solo tiene su arrastre. Por eso la portada muestra también quién está "en racha".</span></li>
       <li><span class="title">Nombres de clubes</span><span class="meta">Un mismo club aparece escrito de varias formas (por ejemplo "U CHILE" y "U DE CHILE"). El sitio unifica {{ res.variantes_club }} variantes.</span></li>
-      <li><span class="title">Deportistas sin club</span><span class="meta">{{ res.sin_club }} deportistas figuran con la sigla "NAC". Aparecen en los rankings individuales, pero no en el medallero de clubes.</span></li>
+      <li><span class="title">Deportistas sin club</span><span class="meta">{{ res.sin_club }} deportistas figuran con la sigla "NAC". Aparecen en los rankings individuales, pero no en la clasificación de clubes.</span></li>
       <li><span class="title">Mismo nombre, misma persona</span><span class="meta">Las planillas no traen RUT; se considera la misma persona a quien tiene el mismo nombre completo y sexo.</span></li>
       <li><span class="title">Comparar categorías</span><span class="meta">Las listas nacionales comparan puntajes de distintas categorías. Es una aproximación: una categoría con más torneos o más inscritos permite sumar más puntos.</span></li>
       <li><span class="title">Lugares</span><span class="meta">El lugar se calcula ordenando por puntaje. Algunas planillas traen errores de numeración en la parte baja de la tabla.</span></li>

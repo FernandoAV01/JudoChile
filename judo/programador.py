@@ -12,6 +12,7 @@ from apscheduler.triggers.cron import CronTrigger
 from .almacen import actualizar, fcntl, leer_estado
 
 log = logging.getLogger(__name__)
+REINTENTO_MINUTOS = 30
 
 
 def proxima_revision(cron: str, zona: str) -> dt.datetime | None:
@@ -47,7 +48,11 @@ def iniciar(app) -> BackgroundScheduler | None:
             actualizar(data_dir, cfg["DRIVE_CARPETA_ID"], cfg["GOOGLE_API_KEY"],
                        conservar=cfg["VERSIONES_A_CONSERVAR"])
         except Exception:
-            pass  # ya quedó registrado en el log y en estado.json
+            # Ya quedó registrado en el log y en estado.json. Se reintenta más tarde
+            # (un solo reintento pendiente a la vez) en vez de esperar al próximo domingo.
+            reintento = dt.datetime.now(ZoneInfo(cfg["ZONA_HORARIA"])) + dt.timedelta(minutes=REINTENTO_MINUTOS)
+            sched.add_job(tarea, "date", run_date=reintento, id="drive-reintento", replace_existing=True)
+            log.info("Se reintentará la descarga desde Drive a las %s", reintento.strftime("%H:%M"))
         # Deja los datos cargados y la portada calculada antes de que llegue una visita.
         app.extensions["almacen"].ranking()
 
@@ -59,6 +64,6 @@ def iniciar(app) -> BackgroundScheduler | None:
         sched.add_job(tarea, id="drive-al-iniciar")
     sched.start()
     app.extensions["programador"] = (sched, lock)
-    atexit.register(lambda: sched.shutdown(wait=False))
+    atexit.register(lambda: sched.running and sched.shutdown(wait=False))
     log.info("Revisión de Drive programada: '%s' (%s)", cfg["ACTUALIZACION_CRON"], cfg["ZONA_HORARIA"])
     return sched

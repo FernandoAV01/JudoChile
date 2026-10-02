@@ -26,7 +26,7 @@
       <span class="leader">{{ ui.rank(1) }}<span>{{ c.lider }}</span></span>
       <span class="caption">{{ c.lider_club }} · {{ c.p1|pts }} pts</span>
       {% endif %}
-      <span class="caption">{{ c.inscritos }} en el ranking · {{ c.activos }} sumaron puntos en {{ rk.anio }}</span>
+      <span class="caption">{{ c.inscritos }} en el ranking · {{ c.activos }} {{ 'sumó' if c.activos == 1 else 'sumaron' }} puntos en {{ rk.anio }}</span>
     </a>
     {% endfor %}
   </div>

@@ -5,8 +5,9 @@
 {%- endmacro %}
 
 {% macro tag(competencia, ventaja=None) -%}
-{% set cls = {'Muy reñida': 'renida', 'Disputada': 'disputada', 'Dominada': 'dominada'}[competencia] %}
-<span class="tag tag-{{ cls }}" title="Ventaja del 1.º sobre el 2.º">{{ competencia }}{% if ventaja is not none %} · {{ ventaja|pct }}{% endif %}</span>
+{% set cls = {'Muy reñida': 'renida', 'Disputada': 'disputada', 'Dominada': 'dominada', 'Sin rivales': 'neutra'}[competencia] %}
+{% if cls == 'neutra' %}<span class="tag tag-neutra" title="Hay un solo deportista en esta categoría">{{ competencia }}</span>
+{%- else %}<span class="tag tag-{{ cls }}" title="Ventaja del 1.º sobre el 2.º">{{ competencia }}{% if ventaja is not none %} · {{ ventaja|pct }}{% endif %}</span>{% endif %}
 {%- endmacro %}
 
 {% macro club(nombre, slug) -%}
@@ -36,25 +37,22 @@
 <div class="legend"><span><i class="sw-s1-soft"></i>Arrastre (50 % del año anterior)</span><span><i class="sw-s1"></i>Puntos de torneos {{ rk.anio }}</span></div>
 {%- endmacro %}
 
-{% macro medallas(oro, plata, bronce, maximo) -%}
-<span class="bar medallas" title="{{ oro }} primeros, {{ plata }} segundos, {{ bronce }} terceros">
-  {%- for n, v in [(1, oro), (2, plata), (3, bronce)] if v %}<span class="m{{ n }}" style="width:{{ '%.1f'|format(100 * v / (maximo or 1)) }}%"></span>{% endfor -%}
-</span>
-{%- endmacro %}
-
-{% macro tabla_medallero(filas, maximo) -%}
+{% macro tabla_clubes(filas, maximo) -%}
 <div class="table-wrap">
-<table class="t" id="medallero">
-  <thead><tr><th class="n">#</th><th>Club</th><th class="n" title="Categorías donde el club tiene al n.º 1">1.º</th><th class="n">2.º</th><th class="n">3.º</th>
-    <th class="w-bar">Podios</th><th class="n" title="Deportistas entre los 8 primeros de su categoría">Top 8</th><th class="n">Deportistas</th><th class="n">Puntos</th></tr></thead>
+<table class="t" id="tabla-clubes">
+  <thead><tr><th class="n">#</th><th>Club</th><th class="n">Puntos</th><th class="w-bar"><span class="sr-only">Gráfico de puntos</span></th>
+    <th class="n">Deportistas</th><th class="n" title="Categorías donde el club tiene al n.º 1">1.º</th><th class="n">2.º</th><th class="n">3.º</th>
+    <th class="n" title="Deportistas entre los 8 primeros de su categoría">Top 8</th></tr></thead>
   <tbody>
   {% for c in filas %}
     <tr data-nombre="{{ c.club_nombre|lower }}">
       <td class="n">{{ c.lugar }}</td>
       <th scope="row">{{ club(c.club_nombre, c.club_slug) }}</th>
+      <td class="n"><b>{{ c.puntos|pts }}</b></td>
+      <td>{{ bar(c.puntos, maximo) }}</td>
+      <td class="n">{{ c.deportistas }}</td>
       <td class="n g">{{ c.oro }}</td><td class="n s">{{ c.plata }}</td><td class="n b">{{ c.bronce }}</td>
-      <td>{{ medallas(c.oro, c.plata, c.bronce, maximo) }}</td>
-      <td class="n">{{ c.top8 }}</td><td class="n">{{ c.deportistas }}</td><td class="n">{{ c.puntos|pts }}</td>
+      <td class="n">{{ c.top8 }}</td>
     </tr>
   {% endfor %}
   </tbody>

@@ -41,21 +41,25 @@ def no_encontrado(_):
 
 @bp.app_errorhandler(503)
 def sin_datos(_):
+    if _almacen().estado().get("resultado") == "error":
+        return render_template("error.html", titulo="No pudimos descargar el ranking",
+                               texto="La carpeta de la federación no respondió. El sitio vuelve a intentarlo "
+                                     "solo cada 30 minutos.", recargar=60), 503
     return render_template("error.html", titulo="Estamos cargando el ranking",
                            texto="El servidor recién se encendió y está descargando las planillas desde la carpeta "
-                                 "de la federación. Tarda menos de un minuto.", recargar=True), 503
+                                 "de la federación. Tarda menos de un minuto.", recargar=10), 503
 
 
 @bp.get("/salud")
 def salud():
-    return {"ok": True, "datos": _almacen().ranking() is not None}
+    return {"ok": True, "datos": _almacen().hay_datos()}
 
 
 @bp.get("/")
 def resumen():
     r = _ranking()
     return render_template(
-        "resumen.html", seccion="resumen", res=r.resumen(), clubes=r.clubes.head(10).to_dict("records"),
+        "resumen.html", seccion="resumen", res=r.resumen(), clubes=r.lista_clubes()[:10],
         mapa=r.mapa_podios(), mejores=r.mejores_por_grupo(), figuras=r.figuras(),
         pelea=r.pelea_primer_lugar(), multi=r.multi_edad(), participacion=r.participacion())
 
@@ -90,7 +94,7 @@ def categoria(grupo, cat):
 @bp.get("/clubes")
 def clubes():
     r = _ranking()
-    return render_template("clubes.html", seccion="clubes", clubes=r.clubes.to_dict("records"))
+    return render_template("clubes.html", seccion="clubes", clubes=r.lista_clubes())
 
 
 @bp.get("/clubes/<slug>")

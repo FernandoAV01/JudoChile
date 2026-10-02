@@ -1,4 +1,4 @@
-"""Indicadores del ranking: medallero de clubes, figuras, competitividad y búsquedas."""
+"""Indicadores del ranking: clasificación de clubes, figuras, competitividad y búsquedas."""
 from __future__ import annotations
 
 import datetime as dt
@@ -10,6 +10,9 @@ import pandas as pd
 from .datos import GRUPOS, SEXOS, SLUG_SIN_CLUB, sin_tildes
 
 ORDEN_GRUPOS = [v for v in sorted(GRUPOS.values(), key=lambda x: x[1])]  # (etiqueta, orden, slug)
+
+
+SIN_RIVALES = "Sin rivales"  # categoría con un solo deportista: no hay a quién sacarle ventaja
 
 
 def nivel_competencia(ventaja: float) -> str:
@@ -35,7 +38,8 @@ def _memo(fn):
     return envoltura
 
 
-def _medallero(df: pd.DataFrame) -> pd.DataFrame:
+def _tabla_clubes(df: pd.DataFrame) -> pd.DataFrame:
+    """Clubes ordenados por puntos totales: la suma del puntaje de todos sus deportistas."""
     t = (
         df.groupby(["club_slug", "club_nombre"])
         .agg(oro=("pos", lambda s: int((s == 1).sum())),
@@ -47,7 +51,7 @@ def _medallero(df: pd.DataFrame) -> pd.DataFrame:
         .reset_index()
     )
     t["podios"] = t.oro + t.plata + t.bronce
-    return t.sort_values(["oro", "plata", "bronce", "puntos"], ascending=False, kind="stable").reset_index(drop=True)
+    return t.sort_values(["puntos", "oro", "plata", "bronce"], ascending=False, kind="stable").reset_index(drop=True)
 
 
 @dataclass
@@ -79,9 +83,10 @@ class Ranking:
         cats["p2"] = cats.cat_id.map(segundo.total).fillna(0)
         cats["ventaja"] = ((cats.p1 - cats.p2) / cats.p1.where(cats.p1 > 0)).fillna(0)
         cats["competencia"] = cats.ventaja.map(nivel_competencia)
+        cats.loc[cats.inscritos < 2, "competencia"] = SIN_RIVALES
         self.cats = cats
 
-        clubes = _medallero(df[df.con_club])
+        clubes = _tabla_clubes(df[df.con_club])
         clubes["lugar"] = clubes.index + 1
         self.clubes = clubes
 
@@ -125,7 +130,7 @@ class Ranking:
         con = self.df[self.df.con_club]
         out = []
         for etiqueta, _, gslug in ORDEN_GRUPOS:
-            t = _medallero(con[con.grupo == etiqueta]).head(n)
+            t = _tabla_clubes(con[con.grupo == etiqueta]).head(n)
             out.append({"grupo": etiqueta, "slug": gslug, "clubes": t.to_dict("records")})
         return out
 
@@ -192,6 +197,10 @@ class Ranking:
     # ------------------------------------------------------------------
     # Clubes y deportistas
     # ------------------------------------------------------------------
+    @_memo
+    def lista_clubes(self) -> list[dict]:
+        return self.clubes.to_dict("records")
+
     @_memo
     def club(self, club_slug: str):
         filas = self.df[self.df.club_slug == club_slug]

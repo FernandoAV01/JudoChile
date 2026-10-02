@@ -15,9 +15,9 @@
 
 <div class="stack">
   <div class="stats">
-    <div class="stat"><b>{{ cat.inscritos }}</b><span>deportistas en el ranking</span></div>
-    <div class="stat"><b>{{ cat.activos }}</b><span>sumaron puntos en torneos {{ rk.anio }}</span></div>
-    <div class="stat"><b>{{ cat.ventaja|pct }}</b><span>ventaja del 1.º sobre el 2.º</span></div>
+    <div class="stat"><b>{{ cat.inscritos }}</b><span>{{ 'deportista' if cat.inscritos == 1 else 'deportistas' }} en el ranking</span></div>
+    <div class="stat"><b>{{ cat.activos }}</b><span>{{ 'sumó' if cat.activos == 1 else 'sumaron' }} puntos en torneos {{ rk.anio }}</span></div>
+    <div class="stat"><b>{{ cat.ventaja|pct if cat.inscritos > 1 else '–' }}</b><span>ventaja del 1.º sobre el 2.º</span></div>
     <div class="stat"><span>Nivel de competencia</span>{{ ui.tag(cat.competencia) }}</div>
   </div>
 

@@ -8,8 +8,8 @@
   <div class="wrap">
     <span class="eyebrow">Federación de Judo de Chile · Ranking nacional {{ rk.anio }}</span>
     <h1>¿Quién manda en el <em>judo chileno</em> este {{ rk.anio }}?</h1>
-    <p class="lead"><a href="{{ url_for('vistas.club', slug=c1.club_slug) }}">{{ c1.club_nombre }}</a> es el club que lidera más categorías:
-      {{ c1.oro }} primeros lugares y {{ c1.podios }} podios. Datos de las planillas oficiales publicadas el {{ rk.fecha_datos|fecha }}.</p>
+    <p class="lead"><a href="{{ url_for('vistas.club', slug=c1.club_slug) }}">{{ c1.club_nombre }}</a> es el club con más puntos del país:
+      {{ c1.puntos|pts }} puntos, {{ c1.oro }} {{ "categoría liderada" if c1.oro == 1 else "categorías lideradas" }} y {{ c1.podios }} {{ "podio" if c1.podios == 1 else "podios" }}. Datos de las planillas oficiales publicadas el {{ rk.fecha_datos|fecha }}.</p>
     <div class="stats">
       <div class="stat"><b>{{ res.deportistas|pts }}</b><span>deportistas en el ranking</span></div>
       <div class="stat"><b>{{ res.clubes }}</b><span>clubes representados</span></div>
@@ -25,9 +25,9 @@
 <section class="section">
   <div class="section-head">
     <h2>Los clubes más fuertes del país</h2>
-    <p>Un medallero del ranking: cuántas categorías encabeza cada club (1.º) y en cuántas tiene al 2.º y al 3.º. Se ordena primero por primeros lugares. "Top 8" mide la profundidad: cuántos de sus deportistas están entre los ocho mejores de su categoría.</p>
+    <p>Ordenados por puntos totales: la suma del puntaje de ranking de todos sus deportistas. Las columnas 1.º, 2.º y 3.º cuentan en cuántas categorías el club tiene a esos lugares; "Top 8", cuántos de sus deportistas están entre los ocho mejores de su categoría.</p>
   </div>
-  {{ ui.tabla_medallero(clubes, clubes|map(attribute='podios')|max) }}
+  {{ ui.tabla_clubes(clubes, clubes[0].puntos) }}
   <a class="more" href="{{ url_for('vistas.clubes') }}">Ver los {{ res.clubes }} clubes</a>
   <div class="grid-2">
     <div class="card">
@@ -50,12 +50,12 @@
     </div>
     <div class="card">
       <div class="card-head"><h3>Los mejores clubes de cada edad</h3>
-        <p class="caption">Los tres primeros del medallero en cada grupo de edad.</p></div>
+        <p class="caption">Los tres clubes con más puntos en cada grupo de edad.</p></div>
       <ul class="dlist">
         {% for g in mejores %}
         <li><span class="title"><a class="plain" href="{{ url_for('vistas.grupo', grupo=g.slug) }}">{{ g.grupo }}</a></span>
           {% for c in g.clubes %}
-          <span class="meta">{{ loop.index }}. {{ ui.club(c.club_nombre, c.club_slug) }} <span class="note">· {{ c.oro }} {{ "primer lugar" if c.oro == 1 else "primeros lugares" }} · {{ c.podios }} {{ "podio" if c.podios == 1 else "podios" }}</span></span>
+          <span class="meta">{{ loop.index }}. {{ ui.club(c.club_nombre, c.club_slug) }} <span class="note">· {{ c.puntos|pts }} pts · {{ c.oro }} {{ "primer lugar" if c.oro == 1 else "primeros lugares" }}</span></span>
           {% endfor %}
         </li>
         {% endfor %}

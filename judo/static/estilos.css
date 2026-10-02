@@ -142,9 +142,10 @@ a.card-link { color: inherit; text-decoration: none; }
 a.card-link:hover { border-color: var(--accent); color: inherit; }
 
 /* ---------- Cifras ---------- */
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 1px; background: var(--line);
+/* Flex en vez de grid: la última fila se estira y no deja celdas vacías en pantallas angostas. */
+.stats { display: flex; flex-wrap: wrap; gap: 1px; background: var(--line);
   border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
-.stat { background: var(--surface); padding: var(--sp-4) var(--sp-5); display: grid; gap: var(--sp-1); align-content: start; }
+.stat { flex: 1 1 150px; background: var(--surface); padding: var(--sp-4) var(--sp-5); display: grid; gap: var(--sp-1); align-content: start; }
 .stat b { font: 700 var(--t-2xl)/1 var(--display); font-variant-numeric: tabular-nums; }
 .stat span { font-size: var(--t-sm); color: var(--ink-2); }
 .stat .tag { justify-self: start; margin-top: 6px; }
@@ -185,6 +186,7 @@ table.t { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
 .tag-renida { color: var(--tag-renida); background: var(--tag-renida-bg); }
 .tag-disputada { color: var(--tag-disputada); background: var(--tag-disputada-bg); }
 .tag-dominada { color: var(--tag-dominada); background: var(--tag-dominada-bg); }
+.tag-neutra { color: var(--ink-2); background: var(--sunken); }
 
 /* ---------- Barras ---------- */
 .bar { display: flex; gap: 2px; height: 8px; background: var(--sunken); border-radius: 4px; overflow: hidden; min-width: 60px; }
@@ -192,13 +194,9 @@ table.t { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
 .bar > span:last-child { border-radius: 0 4px 4px 0; }
 .bar.s2 > span { background: var(--s2); } .bar.s3 > span { background: var(--s3); }
 .bar > span.arrastre { background: var(--s1-soft); border-radius: 0; }
-.bar.medallas { height: 12px; background: transparent; }
-.bar.medallas > span { border-radius: 2px; }
-.bar.medallas .m1 { background: var(--gold); } .bar.medallas .m2 { background: var(--silver); } .bar.medallas .m3 { background: var(--bronze); }
 .legend { display: flex; flex-wrap: wrap; gap: var(--sp-4); font-size: var(--t-sm); color: var(--ink-2); }
 .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
 .sw-s1 { background: var(--s1); } .sw-s1-soft { background: var(--s1-soft); } .sw-s2 { background: var(--s2); }
-.sw-m1 { background: var(--gold); } .sw-m2 { background: var(--silver); } .sw-m3 { background: var(--bronze); }
 
 /* Lista ordenada con barra (figuras) */
 .rlist { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-3); }
@@ -263,7 +261,7 @@ table.t { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
 .formula .op { align-self: center; font: 700 var(--t-2xl)/1 var(--display); color: var(--muted); }
 .formula .total { background: var(--accent-soft); border-color: transparent; }
 .glossary { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: var(--sp-3) var(--sp-5); margin: 0; }
-.glossary div { display: grid; gap: 2px; }
+.glossary div { display: grid; gap: 2px; align-content: start; }
 .glossary dt { font: 700 var(--t-md)/1.2 var(--display); }
 .glossary dd { margin: 0; font-size: var(--t-sm); color: var(--ink-2); }
 
@@ -285,6 +283,8 @@ table.t { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
   .search input { width: 100%; }
 }
 @media (max-width: 560px) {
+  .mainnav { justify-content: space-between; }
+  .mainnav a { padding-inline: 6px; font-size: var(--t-sm); }
   .page-head h1 { font-size: var(--t-xl); }
   .stat b { font-size: var(--t-xl); }
   .formula .op { display: none; }

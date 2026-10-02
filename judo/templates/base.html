@@ -4,6 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{% block title %}Resumen{% endblock %} · Judo Chile {{ rk.anio if rk }}</title>
+  {% set descripcion = "Ranking nacional de judo de Chile explicado: los clubes y deportistas más destacados, y el ranking de cada edad y peso. Datos oficiales de la federación, actualizados cada semana." %}
+  <meta name="description" content="{{ descripcion }}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Judo Chile · Ranking nacional">
+  <meta property="og:title" content="{{ self.title() }} · Judo Chile {{ rk.anio if rk }}">
+  <meta property="og:description" content="{{ descripcion }}">
+  <meta name="theme-color" content="#0f1f3d">
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

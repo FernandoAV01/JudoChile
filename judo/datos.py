@@ -86,7 +86,7 @@ ALIAS_CLUBES = {
     "YAMAARASHI ANCUD": "YAMA ARASHI ANCUD",
     "YAMARASHI": "YAMA HARASHI",
 }
-# "NAC" no identifica a un club concreto: se muestra, pero no entra al medallero de clubes.
+# "NAC" no identifica a un club concreto: se muestra, pero no entra a la clasificación de clubes.
 SIN_CLUB = {"NAC", ""}
 SLUG_SIN_CLUB = "sin-club"
 

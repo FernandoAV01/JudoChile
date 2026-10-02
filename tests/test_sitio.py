@@ -72,6 +72,22 @@ def test_404(client, ruta):
     assert client.get(ruta).status_code == 404
 
 
+def test_clubes_ordenados_por_puntos(app, client):
+    clubes = app.extensions["almacen"].ranking().lista_clubes()
+    puntos = [c["puntos"] for c in clubes]
+    assert puntos == sorted(puntos, reverse=True)
+    assert [c["lugar"] for c in clubes] == list(range(1, len(clubes) + 1))
+    primero, segundo = clubes[0]["club_nombre"], clubes[1]["club_nombre"]
+    for ruta in ("/clubes", "/"):  # sección Clubes y portada
+        html = client.get(ruta).get_data(as_text=True)
+        assert html.index(f">{primero}</a>") < html.index(f">{segundo}</a>")
+
+
+def test_categoria_con_un_solo_deportista(client):
+    html = client.get("/categorias/sub-18/mujeres-40").get_data(as_text=True)
+    assert "Sin rivales" in html and "Dominada" not in html
+
+
 def test_salud(client):
     assert client.get("/salud").get_json() == {"ok": True, "datos": True}
 
@@ -83,6 +99,13 @@ def test_sin_datos_muestra_carga_con_recarga(tmp_path):
     assert r.status_code == 503 and 'http-equiv="refresh"' in r.get_data(as_text=True)
     assert "Cache-Control" not in r.headers
     assert c.get("/salud").get_json() == {"ok": True, "datos": False}
+
+
+def test_descarga_fallida_muestra_aviso(tmp_path):
+    (tmp_path / "estado.json").write_text(json.dumps({"resultado": "error", "error": "sin conexión"}))
+    app = create_app({"TESTING": True, "DATA_DIR": tmp_path, "PROGRAMADOR": False})
+    r = app.test_client().get("/")
+    assert r.status_code == 503 and "No pudimos descargar" in r.get_data(as_text=True)
 
 
 # ---------------------------------------------------------------- datos
