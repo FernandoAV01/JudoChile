@@ -1,0 +1,54 @@
+{% import "_ui.html" as ui with context %}<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block title %}Resumen{% endblock %} · Judo Chile {{ rk.anio if rk }}</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="{{ url_for('static', filename='estilos.css') }}">
+{% block head %}{% endblock %}
+</head>
+<body>
+<div class="obi" aria-hidden="true"></div>
+<header class="masthead">
+  <div class="wrap masthead-row">
+    <a class="brand" href="{{ url_for('vistas.resumen') }}">
+      {{ ui.marca() }}
+      <span class="brand-txt"><b>Judo Chile</b><small>Ranking nacional {{ rk.anio if rk }}</small></span>
+    </a>
+    <nav class="mainnav" aria-label="Secciones">
+      {% for clave, texto, destino in [('resumen', 'Resumen', 'vistas.resumen'), ('categorias', 'Categorías', 'vistas.categorias_inicio'),
+                                       ('clubes', 'Clubes', 'vistas.clubes'), ('metodologia', 'Cómo funciona', 'vistas.metodologia')] %}
+      <a href="{{ url_for(destino) }}"{% if seccion == clave %} aria-current="page"{% endif %}>{{ texto }}</a>
+      {% endfor %}
+    </nav>
+    <form class="search" action="{{ url_for('vistas.buscar') }}" role="search">
+      <label class="sr-only" for="q-top">Buscar deportista o club</label>
+      <input id="q-top" type="search" name="q" value="{{ q|default('') }}" placeholder="Buscar deportista o club" autocomplete="off">
+    </form>
+    {% if usuario %}
+    <div class="user">
+      {% if usuario.foto %}<img src="{{ usuario.foto }}" alt="" referrerpolicy="no-referrer">{% else %}<span class="avatar" aria-hidden="true">{{ usuario.nombre[:1]|upper }}</span>{% endif %}
+      <span class="nombre" title="{{ usuario.email }}">{{ usuario.nombre }}</span>
+      <form method="post" action="{{ url_for('auth.logout') }}"><button class="btn-ghost" type="submit">Salir</button></form>
+    </div>
+    {% endif %}
+  </div>
+</header>
+{% block subnav %}{% endblock %}
+{% block hero %}{% endblock %}
+<main class="wrap">
+{% block content %}{% endblock %}
+</main>
+<footer class="wrap footer">
+  {% if estado.fecha_planillas %}<span>Planillas de la federación publicadas el <b>{{ estado.fecha_planillas|fecha }}</b></span>{% endif %}
+  {% if estado.ultima_revision %}<span>Última revisión de la carpeta: {{ estado.ultima_revision|fecha(true) }}</span>{% endif %}
+  {% if proxima %}<span>Próxima revisión: {{ proxima|fecha(true) }}</span>{% endif %}
+  <span><a href="{{ url_for('vistas.metodologia') }}">Cómo se calcula</a></span>
+</footer>
+<script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</body>
+</html>

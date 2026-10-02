@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+{% block title %}Clubes{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Los {{ clubes|length }} clubes del ranking</h1>
+  <p class="lead">Ordenados como un medallero: primero por categorías donde tienen al n.º 1, luego por segundos y terceros lugares. Elige un club para ver su ficha.</p>
+</div>
+<div class="stack">
+  <div class="filter">
+    <label class="sr-only" for="filtro-clubes">Filtrar clubes por nombre</label>
+    <input class="field" id="filtro-clubes" type="search" placeholder="Filtrar por nombre de club…" autocomplete="off" data-filtra="#medallero">
+    <span class="caption" id="filtro-info" aria-live="polite"></span>
+  </div>
+  <div class="legend"><span><i class="sw-m1"></i>1.º lugar</span><span><i class="sw-m2"></i>2.º lugar</span><span><i class="sw-m3"></i>3.º lugar</span></div>
+  {{ ui.tabla_medallero(clubes, clubes|map(attribute='podios')|max) }}
+</div>
+{% endblock %}

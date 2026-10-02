@@ -1,0 +1,33 @@
+# Configuración para Render (https://render.com), plan gratuito.
+# En Render: New → Blueprint → elige este repositorio. Te pedirá GOOGLE_CLIENT_ID y
+# GOOGLE_CLIENT_SECRET (puedes dejarlos vacíos al principio y completarlos después en
+# Environment; el sitio mostrará "ingreso no configurado" mientras tanto).
+#
+# Plan gratuito: el servidor se duerme tras 15 minutos sin visitas y no tiene disco
+# permanente. Al despertar descarga las planillas vigentes desde Drive, así que los
+# datos siempre están al día; la primera visita tras una pausa tarda alrededor de un minuto.
+services:
+  - type: web
+    name: judo-chile
+    runtime: docker
+    plan: free
+    region: virginia
+    healthCheckPath: /salud
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: DOMINIOS_PERMITIDOS
+        value: mail.pucv.cl
+      - key: DRIVE_CARPETA_ID
+        value: 1g2ZvhjbvHZ9SJYYw8cqsdCQn5ZY3WESf
+      - key: ACTUALIZACION_CRON
+        value: "0 23 * * sun"
+      - key: ZONA_HORARIA
+        value: America/Santiago
+      # 512 MB de RAM y 0,1 CPU: un proceso con varios hilos es suficiente.
+      - key: WEB_CONCURRENCY
+        value: "1"

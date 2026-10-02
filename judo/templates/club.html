@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+{% block title %}{{ club.club_nombre }}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <nav class="crumbs" aria-label="Ruta"><a href="{{ url_for('vistas.clubes') }}">Clubes</a><span aria-hidden="true">/</span><span>{{ club.club_nombre }}</span></nav>
+  <h1>{{ club.club_nombre }}</h1>
+  {% if club.sin_club %}
+  <p class="lead">Deportistas registrados con la sigla "NAC", que no identifica a un club concreto. No participan del medallero de clubes.</p>
+  {% else %}
+  <p class="lead">Puesto <b>{{ club.lugar }}</b> de {{ n_clubes }} en el medallero nacional de clubes.</p>
+  {% endif %}
+</div>
+
+<div class="stack">
+  <div class="stats">
+    <div class="stat"><b>{{ club.oro }}</b><span>categorías que lidera (1.º)</span></div>
+    <div class="stat"><b>{{ club.plata }}</b><span>segundos lugares</span></div>
+    <div class="stat"><b>{{ club.bronce }}</b><span>terceros lugares</span></div>
+    <div class="stat"><b>{{ club.top8 }}</b><span>deportistas en el top 8</span></div>
+    <div class="stat"><b>{{ club.deportistas }}</b><span>deportistas en el ranking</span></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-head"><h3>Presencia por edad</h3><p class="caption">Cuántos deportistas tiene el club en cada edad y cuántos están en el podio.</p></div>
+      <div class="legend"><span><i class="sw-s1"></i>Deportistas</span><span><i class="sw-s2"></i>Podios (1.º a 3.º)</span></div>
+      {% set pmax = [club.presencia|map(attribute='deportistas')|max, 1]|max %}
+      <div class="hbars">
+        {% for p in club.presencia %}
+        <div class="row"><a class="lbl plain" href="{{ url_for('vistas.grupo', grupo=p.slug) }}">{{ p.grupo }}</a>
+          <div class="pair">
+            <i class="sw-s1" style="width:{{ '%.1f'|format(100 * p.deportistas / pmax) }}%"></i><span>{{ p.deportistas }}</span>
+            <i class="sw-s2" style="width:{{ '%.1f'|format(100 * p.podios / pmax) }}%"></i><span>{{ p.podios }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Sus números 1</h3><p class="caption">Categorías donde un deportista del club encabeza el ranking.</p></div>
+      {% if club.numeros_uno %}
+      <ul class="dlist">
+        {% for d in club.numeros_uno %}
+        <li><span class="title">{{ ui.dep(d.deportista, d.dep_slug) }}</span>
+          <span class="meta"><a href="{{ ui.cat_url(d.grupo_slug, d.cat_slug) }}">{{ d.categoria }}</a> · {{ d.total|pts }} pts</span></li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="caption">Este club todavía no encabeza ninguna categoría.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<section class="section">
+  <div class="section-head"><h2>Todos sus deportistas</h2>
+    <p>Una persona puede aparecer más de una vez si compite en dos edades o dos pesos.</p></div>
+  <div class="table-wrap">
+    <table class="t">
+      <thead><tr><th class="rk">Lugar</th><th>Deportista</th><th>Categoría</th><th class="n">Total</th><th class="n">Torneos {{ rk.anio }}</th><th class="n">Internacional</th></tr></thead>
+      <tbody>
+      {% for g in club.por_grupo %}
+        <tr><th class="grupo" colspan="6">{{ g.grupo }} <small>· {{ g.filas|length }} {{ 'posición' if g.filas|length == 1 else 'posiciones' }}</small></th></tr>
+        {% for d in g.filas %}
+        <tr{% if d.pos <= 3 %} class="podio"{% endif %}>
+          <td class="rk">{{ ui.rank(d.pos) }}</td>
+          <th scope="row">{{ ui.dep(d.deportista, d.dep_slug) }}</th>
+          <td><a href="{{ ui.cat_url(d.grupo_slug, d.cat_slug) }}">{{ d.sexo_txt }} {{ d.peso }}</a> <span class="muted">de {{ d.inscritos }}</span></td>
+          <td class="n"><b>{{ d.total|pts }}</b></td>
+          <td class="n">{{ d.torneos|pts }}</td>
+          <td class="n">{{ d.intl|pts if d.intl else '–' }}</td>
+        </tr>
+        {% endfor %}
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

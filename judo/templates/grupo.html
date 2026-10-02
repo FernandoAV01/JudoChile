@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+{% block title %}{{ grupo[0] }}{% endblock %}
+{% block subnav %}{{ ui.subnav_categorias(grupo_slug, por_sexo) }}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <nav class="crumbs" aria-label="Ruta"><a href="{{ url_for('vistas.categorias_inicio') }}">Categorías</a><span aria-hidden="true">/</span><span>{{ grupo[0] }}</span></nav>
+  <h1>{{ grupo[0] }}</h1>
+  <p class="lead">Elige una categoría de peso para ver su ranking completo. Cada tarjeta muestra al líder y qué tan pareja está la pelea por el 1.º lugar.</p>
+  <div class="legend">
+    {{ ui.tag('Muy reñida') }}<span>ventaja menor al 10 %</span>
+    {{ ui.tag('Disputada') }}<span>entre 10 y 30 %</span>
+    {{ ui.tag('Dominada') }}<span>más de 30 %</span>
+  </div>
+</div>
+
+{% for sexo, cats in por_sexo.items() %}
+<section class="section">
+  <div class="section-head"><h2>{{ sexo }}</h2></div>
+  <div class="cat-grid">
+    {% for c in cats %}
+    <a class="card card-link cat-card" href="{{ ui.cat_url(c.grupo_slug, c.cat_slug) }}">
+      <header><h3>{{ c.peso }}</h3>{{ ui.tag(c.competencia, c.ventaja) }}</header>
+      {% if c.lider %}
+      <span class="leader">{{ ui.rank(1) }}<span>{{ c.lider }}</span></span>
+      <span class="caption">{{ c.lider_club }} · {{ c.p1|pts }} pts</span>
+      {% endif %}
+      <span class="caption">{{ c.inscritos }} en el ranking · {{ c.activos }} sumaron puntos en {{ rk.anio }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endfor %}
+{% endblock %}

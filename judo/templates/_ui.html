@@ -1,0 +1,88 @@
+{# Componentes compartidos: úsalos en vez de repetir HTML para mantener el diseño consistente. #}
+
+{% macro rank(pos) -%}
+<span class="rank{% if pos <= 3 %} rank-{{ pos }}{% endif %}" title="{{ pos }}.º lugar">{{ pos }}</span>
+{%- endmacro %}
+
+{% macro tag(competencia, ventaja=None) -%}
+{% set cls = {'Muy reñida': 'renida', 'Disputada': 'disputada', 'Dominada': 'dominada'}[competencia] %}
+<span class="tag tag-{{ cls }}" title="Ventaja del 1.º sobre el 2.º">{{ competencia }}{% if ventaja is not none %} · {{ ventaja|pct }}{% endif %}</span>
+{%- endmacro %}
+
+{% macro club(nombre, slug) -%}
+<a class="plain" href="{{ url_for('vistas.club', slug=slug) }}">{{ nombre }}</a>
+{%- endmacro %}
+
+{% macro dep(nombre, slug) -%}
+<a class="plain" href="{{ url_for('vistas.deportista', slug=slug) }}">{{ nombre }}</a>
+{%- endmacro %}
+
+{% macro cat_url(grupo_slug, cat_slug) -%}
+{{ url_for('vistas.categoria', grupo=grupo_slug, cat=cat_slug) }}
+{%- endmacro %}
+
+{% macro bar(valor, maximo, variante='') -%}
+<span class="bar {{ variante }}" title="{{ valor|pts }} pts"><span style="width:{{ '%.1f'|format(100 * valor / (maximo or 1)) }}%"></span></span>
+{%- endmacro %}
+
+{% macro composicion(arrastre, torneos, maximo) -%}
+<span class="bar" title="Arrastre {{ arrastre|pts }} + torneos {{ torneos|pts }}">
+  {%- if arrastre > 0 %}<span class="arrastre" style="width:{{ '%.1f'|format(100 * arrastre / (maximo or 1)) }}%"></span>{% endif -%}
+  {%- if torneos > 0 %}<span style="width:{{ '%.1f'|format(100 * torneos / (maximo or 1)) }}%"></span>{% endif -%}
+</span>
+{%- endmacro %}
+
+{% macro leyenda_composicion() -%}
+<div class="legend"><span><i class="sw-s1-soft"></i>Arrastre (50 % del año anterior)</span><span><i class="sw-s1"></i>Puntos de torneos {{ rk.anio }}</span></div>
+{%- endmacro %}
+
+{% macro medallas(oro, plata, bronce, maximo) -%}
+<span class="bar medallas" title="{{ oro }} primeros, {{ plata }} segundos, {{ bronce }} terceros">
+  {%- for n, v in [(1, oro), (2, plata), (3, bronce)] if v %}<span class="m{{ n }}" style="width:{{ '%.1f'|format(100 * v / (maximo or 1)) }}%"></span>{% endfor -%}
+</span>
+{%- endmacro %}
+
+{% macro tabla_medallero(filas, maximo) -%}
+<div class="table-wrap">
+<table class="t" id="medallero">
+  <thead><tr><th class="n">#</th><th>Club</th><th class="n" title="Categorías donde el club tiene al n.º 1">1.º</th><th class="n">2.º</th><th class="n">3.º</th>
+    <th class="w-bar">Podios</th><th class="n" title="Deportistas entre los 8 primeros de su categoría">Top 8</th><th class="n">Deportistas</th><th class="n">Puntos</th></tr></thead>
+  <tbody>
+  {% for c in filas %}
+    <tr data-nombre="{{ c.club_nombre|lower }}">
+      <td class="n">{{ c.lugar }}</td>
+      <th scope="row">{{ club(c.club_nombre, c.club_slug) }}</th>
+      <td class="n g">{{ c.oro }}</td><td class="n s">{{ c.plata }}</td><td class="n b">{{ c.bronce }}</td>
+      <td>{{ medallas(c.oro, c.plata, c.bronce, maximo) }}</td>
+      <td class="n">{{ c.top8 }}</td><td class="n">{{ c.deportistas }}</td><td class="n">{{ c.puntos|pts }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{%- endmacro %}
+
+{% macro subnav_categorias(grupo_slug, por_sexo=None, cat_slug=None) -%}
+<nav class="subnav" aria-label="Categorías"><div class="wrap">
+  <div class="pill-row"><span class="pill-label">Edad</span>
+    {% for etiqueta, _, gslug in grupos_nav %}
+    <a class="pill" href="{{ url_for('vistas.grupo', grupo=gslug) }}"{% if gslug == grupo_slug %} aria-current="page"{% endif %}>{{ etiqueta }}</a>
+    {% endfor %}
+  </div>
+  {% if por_sexo %}{% for sexo, cats in por_sexo.items() %}
+  <div class="pill-row"><span class="pill-label">{{ sexo }}</span>
+    {% for c in cats %}
+    <a class="pill" href="{{ cat_url(c.grupo_slug, c.cat_slug) }}"{% if c.cat_slug == cat_slug %} aria-current="page"{% endif %}>{{ c.peso }}</a>
+    {% endfor %}
+  </div>
+  {% endfor %}{% endif %}
+</div></nav>
+{%- endmacro %}
+
+{% macro marca(tam=30) -%}
+<svg class="brand-mark" width="{{ tam }}" height="{{ tam }}" viewBox="0 0 32 32" aria-hidden="true">
+  <rect x="2" y="2" width="22" height="22" rx="3" fill="#2a78d6"/>
+  <rect x="10" y="10" width="20" height="20" rx="3" fill="#d62839"/>
+  <rect x="10" y="10" width="14" height="14" fill="#173f8a"/>
+</svg>
+{%- endmacro %}

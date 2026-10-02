@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+{% block title %}Resumen{% endblock %}
+
+{% block hero %}
+{% set c1 = clubes[0] %}
+<section class="hero">
+  <div class="wrap">
+    <span class="eyebrow">Federación de Judo de Chile · Ranking nacional {{ rk.anio }}</span>
+    <h1>¿Quién manda en el <em>judo chileno</em> este {{ rk.anio }}?</h1>
+    <p class="lead"><a href="{{ url_for('vistas.club', slug=c1.club_slug) }}">{{ c1.club_nombre }}</a> es el club que lidera más categorías:
+      {{ c1.oro }} primeros lugares y {{ c1.podios }} podios. Datos de las planillas oficiales publicadas el {{ rk.fecha_datos|fecha }}.</p>
+    <div class="stats">
+      <div class="stat"><b>{{ res.deportistas|pts }}</b><span>deportistas en el ranking</span></div>
+      <div class="stat"><b>{{ res.clubes }}</b><span>clubes representados</span></div>
+      <div class="stat"><b>{{ res.categorias }}</b><span>categorías de edad, sexo y peso</span></div>
+      <div class="stat"><b>{{ res.activos|pts }}</b><span>ya sumaron puntos en torneos {{ rk.anio }}</span></div>
+      <div class="stat"><b>{{ res.intl }}</b><span>tienen puntos internacionales</span></div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="section-head">
+    <h2>Los clubes más fuertes del país</h2>
+    <p>Un medallero del ranking: cuántas categorías encabeza cada club (1.º) y en cuántas tiene al 2.º y al 3.º. Se ordena primero por primeros lugares. "Top 8" mide la profundidad: cuántos de sus deportistas están entre los ocho mejores de su categoría.</p>
+  </div>
+  {{ ui.tabla_medallero(clubes, clubes|map(attribute='podios')|max) }}
+  <a class="more" href="{{ url_for('vistas.clubes') }}">Ver los {{ res.clubes }} clubes</a>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-head"><h3>Dónde gana cada club</h3>
+        <p class="caption">Podios (1.º a 3.º) de los {{ mapa.filas|length }} mejores clubes en cada edad. Más oscuro, más podios.</p></div>
+      <div class="table-wrap">
+        <table class="t heat">
+          <thead><tr><th>Club</th>{% for etiqueta, _, gslug in mapa.grupos %}<th><a class="plain" href="{{ url_for('vistas.grupo', grupo=gslug) }}">{{ etiqueta }}</a></th>{% endfor %}</tr></thead>
+          <tbody>
+          {% for f in mapa.filas %}
+            <tr><th scope="row">{{ ui.club(f.club, f.slug) }}</th>
+            {% for v in f.valores %}
+              {% set lvl = 0 if v == 0 else 1 + ((v - 1) * 5 // ([mapa.max - 1, 1]|max)) %}
+              <td class="h h{{ lvl }}" title="{{ f.club }} · {{ mapa.grupos[loop.index0][0] }}: {{ v }} podios">{{ v if v else '·' }}</td>
+            {% endfor %}</tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Los mejores clubes de cada edad</h3>
+        <p class="caption">Los tres primeros del medallero en cada grupo de edad.</p></div>
+      <ul class="dlist">
+        {% for g in mejores %}
+        <li><span class="title"><a class="plain" href="{{ url_for('vistas.grupo', grupo=g.slug) }}">{{ g.grupo }}</a></span>
+          {% for c in g.clubes %}
+          <span class="meta">{{ loop.index }}. {{ ui.club(c.club_nombre, c.club_slug) }} <span class="note">· {{ c.oro }} {{ "primer lugar" if c.oro == 1 else "primeros lugares" }} · {{ c.podios }} {{ "podio" if c.podios == 1 else "podios" }}</span></span>
+          {% endfor %}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <h2>Las figuras del ranking</h2>
+    <p>Tres maneras de mirar quién destaca. Cada deportista aparece una vez, con su mejor categoría.</p>
+  </div>
+  <div class="grid-3">
+    {% for clave, titulo, nota, campo, variante in [
+        ('total', 'Más puntos de ranking', 'Arrastre del año anterior + torneos ' ~ rk.anio ~ '.', 'total', ''),
+        ('temporada', 'En racha este ' ~ rk.anio, 'Solo lo ganado en torneos de este año.', 'torneos', 's3'),
+        ('intl', 'Chile en el extranjero', 'Ranking internacional: Open, Panamericanos, Grand Prix y más.', 'intl', 's2')] %}
+    {% set lista = figuras[clave] %}
+    {% set maximo = lista[0][campo] if lista else 1 %}
+    <div class="card">
+      <div class="card-head"><h3>{{ titulo }}</h3><p class="caption">{{ nota }}</p></div>
+      <ol class="rlist">
+        {% for d in lista %}
+        <li>
+          <span class="n">{{ loop.index }}</span>
+          <span class="t"><b>{{ ui.dep(d.deportista, d.dep_slug) }}</b>
+            <small><a href="{{ ui.cat_url(d.grupo_slug, d.cat_slug) }}">{{ d.grupo }} {{ d.sexo_txt|lower }} {{ d.peso }}</a> · {{ d.club_nombre }}</small></span>
+          <span class="v">{{ d[campo]|pts }}</span>
+          {{ ui.bar(d[campo], maximo, variante) }}
+        </li>
+        {% endfor %}
+      </ol>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <h2>La pelea por el primer lugar</h2>
+    <p>Comparamos al 1.º con el 2.º de cada categoría. Una ventaja grande indica un líder claro; una ventaja chica, una categoría abierta.</p>
+  </div>
+  <div class="grid-2">
+    {% for clave, titulo, nota in [('dominadas', 'Líderes con más ventaja', 'El 1.º supera al 2.º por más puntos.'),
+                                  ('renidas', 'Categorías más reñidas', 'El 1.º y el 2.º están casi empatados.')] %}
+    <div class="card">
+      <div class="card-head"><h3>{{ titulo }}</h3><p class="caption">{{ nota }}</p></div>
+      <ul class="dlist">
+        {% for c in pelea[clave] %}
+        <li>
+          <span class="title">{{ ui.dep(c.lider, c.lider_slug) }} <small>· {{ c.lider_club }}</small></span>
+          <span class="meta"><a href="{{ ui.cat_url(c.grupo_slug, c.cat_slug) }}">{{ c.categoria }}</a> {{ ui.tag(c.competencia, c.ventaja) }}</span>
+          <span class="note">{{ c.p1|pts }} contra {{ c.p2|pts }} puntos</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <h2>Talento y participación</h2>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-head"><h3>En el podio de dos edades</h3>
+        <p class="caption">{{ multi|length }} deportistas están entre los tres primeros de dos grupos de edad a la vez, por ejemplo Sub 21 y Absoluta.</p></div>
+      <ul class="dlist">
+        {% for m in multi[:8] %}
+        <li>
+          <span class="title">{{ ui.dep(m.deportista, m.slug) }} <small>· {{ m.club }}</small></span>
+          <span class="meta">{% for l in m.lugares %}<a href="{{ ui.cat_url(l.grupo_slug, l.cat_slug) }}">{{ l.pos }}.º {{ l.grupo }} {{ l.peso }}</a>{% if not loop.last %} · {% endif %}{% endfor %}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>¿Cuántos compiten en cada edad?</h3>
+        <p class="caption">Deportistas distintos en el ranking de cada grupo de edad.</p></div>
+      <div class="legend"><span><i class="sw-s1"></i>Mujeres</span><span><i class="sw-s2"></i>Hombres</span></div>
+      {% set pmax = participacion|map(attribute='M')|list + participacion|map(attribute='F')|list %}
+      {% set pmax = pmax|max %}
+      <div class="hbars">
+        {% for p in participacion %}
+        <div class="row"><a class="lbl plain" href="{{ url_for('vistas.grupo', grupo=p.slug) }}">{{ p.grupo }}</a>
+          <div class="pair">
+            <i class="sw-s1" style="width:{{ '%.1f'|format(100 * p.F / pmax) }}%" title="Mujeres: {{ p.F }}"></i><span>{{ p.F }}</span>
+            <i class="sw-s2" style="width:{{ '%.1f'|format(100 * p.M / pmax) }}%" title="Hombres: {{ p.M }}"></i><span>{{ p.M }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head"><h2>Cómo se calcula el puntaje</h2></div>
+  {% include "_formula.html" %}
+  <a class="more" href="{{ url_for('vistas.metodologia') }}">Más detalles y advertencias</a>
+</section>
+{% endblock %}

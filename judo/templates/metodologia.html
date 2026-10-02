@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+{% block title %}Cómo funciona{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Cómo funciona el ranking</h1>
+  <p class="lead">Qué significa cada número del sitio, de dónde salen los datos y qué tener en cuenta al leerlos.</p>
+</div>
+
+<section class="section">
+  <div class="section-head"><h2>El puntaje</h2>
+    <p>Cada deportista suma puntos según el torneo y el lugar en que termina. Así el ranking premia la constancia y también los resultados recientes.</p></div>
+  {% include "_formula.html" %}
+  <dl class="glossary">
+    <div><dt>Categoría</dt><dd>Edad + sexo + peso. Por ejemplo, Sub 15 · Mujeres · −52 kg.</dd></div>
+    <div><dt>RE · ZO · NA</dt><dd>Campeonato regional, zonal (norte, centro o sur) y nacional.</dd></div>
+    <div><dt>Ranking internacional</dt><dd>Puntos aparte por torneos en el extranjero. Solo en Absoluta, Sub 21 y Sub 18.</dd></div>
+    <div><dt>Podio</dt><dd>Estar 1.º, 2.º o 3.º del ranking de una categoría.</dd></div>
+    <div><dt>Top 8</dt><dd>Estar entre los ocho primeros de una categoría.</dd></div>
+    <div><dt>Nivel de competencia</dt><dd>Ventaja del 1.º sobre el 2.º: {{ ui.tag('Muy reñida') }} menos de 10 %, {{ ui.tag('Disputada') }} 10 a 30 %, {{ ui.tag('Dominada') }} más de 30 %.</dd></div>
+  </dl>
+</section>
+
+<section class="section">
+  <div class="section-head"><h2>De dónde salen los datos</h2>
+    <p>El sitio revisa automáticamente la carpeta pública donde la Federación de Judo de Chile publica las planillas del ranking. Solo descarga cuando alguna planilla cambió.</p></div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-head"><h3>Estado de la actualización</h3></div>
+      <ul class="dlist">
+        <li><span class="title">Planillas vigentes</span><span class="meta">Publicadas por la federación el {{ estado.fecha_planillas|fecha }}</span></li>
+        <li><span class="title">Última revisión</span>
+          <span class="meta">{{ estado.ultima_revision|fecha(true) }} ·
+            {% if estado.resultado == 'error' %}no se pudo completar; se mantienen los datos anteriores{% elif estado.resultado == 'sin cambios' %}sin cambios en la carpeta{% else %}se descargó una versión nueva{% endif %}</span></li>
+        <li><span class="title">Próxima revisión</span><span class="meta">{{ proxima|fecha(true) }} (todos los domingos en la noche)</span></li>
+        <li><span class="title">Contenido</span><span class="meta">{{ res.registros|pts }} filas: {{ res.deportistas|pts }} deportistas en {{ res.categorias }} categorías</span></li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Planillas usadas</h3></div>
+      <div class="table-wrap">
+        <table class="t">
+          <thead><tr><th>Archivo</th><th class="n">Modificado</th></tr></thead>
+          <tbody>
+          {% for a in estado.archivos or [] %}
+            <tr><th scope="row">{{ a.nombre }}</th><td class="n">{{ a.modificado|fecha(true) }}</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head"><h2>Advertencias</h2></div>
+  <div class="card">
+    <ul class="dlist">
+      <li><span class="title">La temporada está en curso</span><span class="meta">Quien aún no compite este año solo tiene su arrastre. Por eso la portada muestra también quién está "en racha".</span></li>
+      <li><span class="title">Nombres de clubes</span><span class="meta">Un mismo club aparece escrito de varias formas (por ejemplo "U CHILE" y "U DE CHILE"). El sitio unifica {{ res.variantes_club }} variantes.</span></li>
+      <li><span class="title">Deportistas sin club</span><span class="meta">{{ res.sin_club }} deportistas figuran con la sigla "NAC". Aparecen en los rankings individuales, pero no en el medallero de clubes.</span></li>
+      <li><span class="title">Mismo nombre, misma persona</span><span class="meta">Las planillas no traen RUT; se considera la misma persona a quien tiene el mismo nombre completo y sexo.</span></li>
+      <li><span class="title">Comparar categorías</span><span class="meta">Las listas nacionales comparan puntajes de distintas categorías. Es una aproximación: una categoría con más torneos o más inscritos permite sumar más puntos.</span></li>
+      <li><span class="title">Lugares</span><span class="meta">El lugar se calcula ordenando por puntaje. Algunas planillas traen errores de numeración en la parte baja de la tabla.</span></li>
+    </ul>
+  </div>
+</section>
+{% endblock %}

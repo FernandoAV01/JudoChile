@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+{% block title %}{{ cat.categoria }}{% endblock %}
+{% block subnav %}{{ ui.subnav_categorias(grupo_slug, por_sexo, cat.cat_slug) }}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <nav class="crumbs" aria-label="Ruta">
+    <a href="{{ url_for('vistas.categorias_inicio') }}">Categorías</a><span aria-hidden="true">/</span>
+    <a href="{{ url_for('vistas.grupo', grupo=grupo_slug) }}">{{ cat.grupo }}</a><span aria-hidden="true">/</span>
+    <span>{{ cat.sexo_txt }} {{ cat.peso }}</span>
+  </nav>
+  <h1>{{ cat.grupo }} · {{ cat.sexo_txt }} · {{ cat.peso }}</h1>
+</div>
+
+<div class="stack">
+  <div class="stats">
+    <div class="stat"><b>{{ cat.inscritos }}</b><span>deportistas en el ranking</span></div>
+    <div class="stat"><b>{{ cat.activos }}</b><span>sumaron puntos en torneos {{ rk.anio }}</span></div>
+    <div class="stat"><b>{{ cat.ventaja|pct }}</b><span>ventaja del 1.º sobre el 2.º</span></div>
+    <div class="stat"><span>Nivel de competencia</span>{{ ui.tag(cat.competencia) }}</div>
+  </div>
+
+  {% if filas %}
+  <div class="podium">
+    {% for d in filas[:3] %}
+    <div class="card p{{ d.pos }}">
+      <span class="caption">{{ d.pos }}.º lugar</span>
+      <span class="who">{{ ui.dep(d.deportista, d.dep_slug) }}</span>
+      <span class="caption">{{ ui.club(d.club_nombre, d.club_slug) }}</span>
+      <span class="pts">{{ d.total|pts }} <small>pts</small></span>
+      <span class="caption">{{ d.n_torneos }} {{ "torneo" if d.n_torneos == 1 else "torneos" }} con puntos en {{ rk.anio }}{% if d.intl %} · {{ d.intl|pts }} pts internacionales{% endif %}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<section class="section">
+  <div class="section-head">
+    <h2>Ranking completo</h2>
+    <p>La barra muestra de dónde viene el puntaje de cada deportista: lo arrastrado del año pasado y lo ganado este año.</p>
+  </div>
+  {{ ui.leyenda_composicion() }}
+  <div class="table-wrap">
+    <table class="t">
+      <thead><tr><th class="rk">Lugar</th><th>Deportista</th><th>Club</th><th class="n">Total</th><th class="w-bar">Composición</th>
+        <th class="n">Arrastre</th><th class="n">Torneos {{ rk.anio }}</th><th class="n" title="Torneos {{ rk.anio }} con puntos">N.º torneos</th><th class="n">Internacional</th></tr></thead>
+      <tbody>
+      {% for d in filas %}
+        <tr{% if d.pos <= 3 %} class="podio"{% endif %}>
+          <td class="rk">{{ ui.rank(d.pos) }}</td>
+          <th scope="row">{{ ui.dep(d.deportista, d.dep_slug) }}</th>
+          <td>{{ ui.club(d.club_nombre, d.club_slug) }}</td>
+          <td class="n"><b>{{ d.total|pts }}</b></td>
+          <td>{{ ui.composicion(d.arrastre, d.torneos, maximo) }}</td>
+          <td class="n">{{ d.arrastre|pts }}</td>
+          <td class="n">{{ d.torneos|pts }}</td>
+          <td class="n">{{ d.n_torneos }}</td>
+          <td class="n">{{ d.intl|pts if d.intl else '–' }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

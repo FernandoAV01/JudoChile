@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+{% block title %}Buscar{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>{% if q %}Resultados para “{{ q }}”{% else %}Buscar{% endif %}</h1>
+  <form class="filter" action="{{ url_for('vistas.buscar') }}" role="search">
+    <label class="sr-only" for="q-main">Nombre, apellido o club</label>
+    <input class="field" id="q-main" type="search" name="q" value="{{ q }}" placeholder="Nombre, apellido o club" autocomplete="off">
+  </form>
+</div>
+
+<div class="stack">
+{% if not q or q|length < 2 %}
+  <p class="caption">Escribe al menos dos letras. Por ejemplo: un apellido o el nombre de un club.</p>
+{% elif not res.clubes and not res.deportistas %}
+  <div class="card empty">No encontramos deportistas ni clubes con “{{ q }}”. Revisa la ortografía o prueba solo con el apellido.</div>
+{% else %}
+  {% if res.clubes %}
+  <section class="card">
+    <div class="card-head"><h3>Clubes</h3></div>
+    <ul class="dlist">
+      {% for c in res.clubes %}
+      <li><span class="title">{{ ui.club(c.club_nombre, c.club_slug) }}</span>
+        <span class="note">Puesto {{ c.lugar }} · {{ c.oro }} {{ "primer lugar" if c.oro == 1 else "primeros lugares" }} · {{ c.podios }} {{ "podio" if c.podios == 1 else "podios" }} · {{ c.deportistas }} deportistas</span></li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+  {% if res.deportistas %}
+  <section class="stack">
+    <div class="section-head"><h2>Deportistas</h2>
+      <p>{{ res.total }} resultado{{ 's' if res.total != 1 }}{% if res.total > res.deportistas|length %}; se muestran los {{ res.deportistas|length }} mejor ubicados{% endif %}. Se muestra la mejor categoría de cada uno.</p></div>
+    <div class="table-wrap">
+      <table class="t">
+        <thead><tr><th>Deportista</th><th>Club</th><th>Mejor categoría</th><th class="rk">Lugar</th><th class="n">Total</th></tr></thead>
+        <tbody>
+        {% for d in res.deportistas %}
+          <tr>
+            <th scope="row">{{ ui.dep(d.deportista, d.dep_slug) }}</th>
+            <td>{{ ui.club(d.club_nombre, d.club_slug) }}</td>
+            <td><a href="{{ ui.cat_url(d.grupo_slug, d.cat_slug) }}">{{ d.categoria }}</a></td>
+            <td class="rk">{{ ui.rank(d.pos) }}</td>
+            <td class="n">{{ d.total|pts }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+{% endif %}
+</div>
+{% endblock %}
