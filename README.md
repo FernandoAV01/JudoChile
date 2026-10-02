@@ -1,117 +1,126 @@
 # Judo Chile · Ranking nacional
 
-Sitio web que analiza el Ranking Nacional de la Federación de Judo de Chile (FEJUCHILE):
-clubes y deportistas más destacados del país, ranking completo por edad y peso, y la ficha
-de cada club y deportista.
+Sitio web que analiza el **Ranking Nacional de la Federación de Judo de Chile (FEJUCHILE)** y lo
+explica para cualquier persona: qué clubes y deportistas destacan en el país, el ranking completo de
+cada edad y peso, y una ficha por club y por deportista.
 
-- **Acceso**: solo cuentas de Google con correo `@mail.pucv.cl` (configurable).
-- **Datos**: se leen de la [carpeta pública de Drive](https://drive.google.com/drive/folders/1g2ZvhjbvHZ9SJYYw8cqsdCQn5ZY3WESf)
-  donde la federación publica las planillas. El sitio la revisa **todos los domingos a las 23:00 (hora de Chile)**
-  y solo descarga cuando alguna planilla cambió.
+Los datos salen de la [carpeta pública de Google Drive](https://drive.google.com/drive/folders/1g2ZvhjbvHZ9SJYYw8cqsdCQn5ZY3WESf)
+donde la federación publica las planillas. El sitio la revisa solo **todos los domingos a las 23:00
+(hora de Chile)** y descarga las planillas únicamente cuando alguna cambió.
 
-## Cómo está armado
+El sitio es público: cualquier persona con el enlace puede verlo.
+
+## Qué muestra
+
+| Página | Contenido |
+|---|---|
+| **Resumen** | Cifras del país, medallero de clubes, dónde gana cada club por edad, figuras (más puntos, mejor temporada, ranking internacional), categorías más dominadas y más reñidas |
+| **Categorías** | Se elige la edad (Sub 13 a Absoluta) y luego el peso. Muestra el podio y el ranking completo, con la composición del puntaje de cada deportista |
+| **Clubes** | Medallero de todos los clubes y la ficha de cada uno: sus números 1, presencia por edad y todos sus deportistas |
+| **Deportistas** | Ficha con todas sus categorías, lugar, puntaje y puntos internacionales |
+| **Cómo funciona** | Cómo se calcula el puntaje, estado de la última actualización y advertencias sobre los datos |
+
+### Cómo se calcula el puntaje
+
+Verificado con las planillas: el total de cada año es el **50 % de los puntos ganados en torneos del
+año anterior** (arrastre) más los **puntos de torneos del año en curso**. Ese total ordena cada
+categoría. Absoluta, Sub 21 y Sub 18 traen además un ranking internacional que funciona igual.
+
+## Estructura
 
 ```
 judo/
   datos.py        lee las planillas .xlsx (detecta el año solo; sirve para 2027 en adelante)
-  analisis.py     medallero de clubes, figuras, competitividad, búsquedas
+  analisis.py     medallero de clubes, figuras, competitividad y búsquedas
   drive.py        lista y descarga la carpeta pública de Drive
-  almacen.py      guarda versiones en data/ y recarga los datos cuando hay una nueva
+  almacen.py      guarda cada versión descargada en data/ y recarga los datos cuando hay una nueva
   programador.py  revisión semanal automática
-  auth.py         ingreso con Google y restricción de dominio
+  actualizar.py   actualización manual desde la línea de comandos
   vistas.py       páginas del sitio
-  templates/      HTML (Jinja); _ui.html tiene los componentes compartidos
-  static/         estilos.css (sistema de diseño), app.js
-tests/            pruebas (acceso, páginas y datos)
+  templates/      HTML (Jinja); _ui.html reúne los componentes compartidos
+  static/         estilos.css (sistema de diseño) y app.js
+tests/            pruebas automáticas
+wsgi.py           punto de entrada para gunicorn
+render.yaml       configuración para publicar en Render
+Dockerfile        imagen para publicar en cualquier servicio con Docker
 ```
 
-Si una descarga falla o la federación sube una planilla con un formato que no se puede leer,
-el sitio **mantiene los datos anteriores** y deja el error registrado en `data/estado.json`
+Si una descarga falla, o la federación sube una planilla con un formato que no se puede leer, el
+sitio **mantiene los datos anteriores**. El error queda registrado en el log, en `data/estado.json`
 y en la página "Cómo funciona".
 
-## 1. Crear las credenciales de Google (una vez)
+## Usarlo en tu computador
 
-1. Entra a <https://console.cloud.google.com/> y crea un proyecto (por ejemplo "Judo Chile").
-2. **APIs y servicios → Pantalla de consentimiento de OAuth**: tipo *Externo*, nombre de la app,
-   correo de soporte. Alcances: `openid`, `email`, `profile`. Publica la app (no necesita verificación
-   porque esos alcances son básicos).
-3. **APIs y servicios → Credenciales → Crear credenciales → ID de cliente de OAuth**:
-   - Tipo: *Aplicación web*.
-   - URI de redirección autorizados:
-     - `https://TU-DOMINIO/auth/callback` (producción)
-     - `http://localhost:8000/auth/callback` (pruebas locales)
-4. Copia el *ID de cliente* y el *Secreto* a `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`.
-5. (Opcional, recomendado) **Crear credenciales → Clave de API**, habilita la *Google Drive API*
-   y ponla en `GOOGLE_API_KEY`. Sin clave el sitio igual funciona leyendo la página pública de la
-   carpeta, pero la API oficial es más estable si Google cambia esa página.
-
-La restricción a `@mail.pucv.cl` se verifica en el servidor (correo verificado por Google y dominio
-exacto); no se puede saltar desde el navegador. Para autorizar otros dominios:
-`DOMINIOS_PERMITIDOS=mail.pucv.cl,pucv.cl`.
-
-## 2. Probar en tu computador
+Requiere Python 3.12 o superior.
 
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt pytest
-cp .env.example .env          # completa SECRET_KEY y las credenciales; COOKIE_SEGURA=0
-.venv/bin/python -m judo.actualizar           # primera descarga desde Drive
-.venv/bin/gunicorn --workers 1 --threads 4 --bind 127.0.0.1:8000 wsgi:app
+.venv/bin/python -m judo.actualizar            # primera descarga desde Drive
+.venv/bin/gunicorn --threads 4 --bind 127.0.0.1:8000 wsgi:app
 ```
 
-Abre <http://localhost:8000>. Pruebas: `.venv/bin/python -m pytest -q`.
+Abre <http://localhost:8000>.
 
-## 3. Publicar gratis en Render
+Pruebas: `.venv/bin/python -m pytest -q`. Usan las planillas `RANKING … .xlsx` de la raíz del repositorio.
 
-[Render](https://render.com) tiene un plan gratuito sin tarjeta de crédito. El repositorio ya trae
-`render.yaml`, así que Render configura todo solo.
+## Publicar gratis en Render
+
+[Render](https://render.com) tiene un plan gratuito sin tarjeta de crédito, y `render.yaml` deja
+todo configurado.
+
+1. Crea una cuenta en Render entrando con GitHub.
+2. **New → Blueprint**, elige este repositorio y confirma.
+3. Espera el primer despliegue (unos minutos). Render te da una dirección como
+   `https://judo-chile.onrender.com`; esa es la que compartes.
+
+Cada `git push` a `main` vuelve a publicar el sitio automáticamente.
 
 **Qué implica el plan gratuito**
 
 | | |
 |---|---|
 | Costo | $0, sin tarjeta |
-| Dirección | `https://judo-chile.onrender.com` (o similar), con HTTPS |
-| Se duerme | tras 15 minutos sin visitas; la primera visita después espera ~1 minuto (la página de carga se recarga sola) |
-| Datos | no hay disco permanente: al despertar descarga las planillas vigentes de Drive, así que siempre están al día |
-| Límites | 512 MB de RAM (el sitio usa ~110 MB) y 750 horas al mes (alcanza para estar encendido todo el mes) |
-
-**Pasos**
-
-1. Crea una cuenta en <https://github.com> y un repositorio **privado** vacío (por ejemplo `judo-chile`).
-2. Sube el proyecto (desde esta carpeta):
-   ```bash
-   git init -b main
-   git add .
-   git commit -m "Sitio del ranking de judo"
-   git remote add origin https://github.com/TU-USUARIO/judo-chile.git
-   git push -u origin main
-   ```
-   `.env` y `data/` no se suben (están en `.gitignore`).
-3. Crea una cuenta en <https://render.com> entrando con GitHub.
-4. **New → Blueprint**, elige el repositorio y confirma. Cuando pida `GOOGLE_CLIENT_ID` y
-   `GOOGLE_CLIENT_SECRET` puedes dejarlos vacíos por ahora.
-5. Espera el primer despliegue (unos minutos) y anota la dirección que te asigna Render.
-6. Haz el paso 1 de este README (credenciales de Google) usando
-   `https://TU-SERVICIO.onrender.com/auth/callback` como URI de redirección.
-7. En Render → tu servicio → **Environment**, completa `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`
-   y guarda. El servicio se reinicia solo y el ingreso queda funcionando.
-
-Cada `git push` a `main` vuelve a desplegar el sitio automáticamente.
+| Se duerme | Tras 15 minutos sin visitas. La primera visita después espera alrededor de un minuto; mientras tanto ve una página de carga que se recarga sola |
+| Datos | No hay disco permanente: al despertar, el sitio descarga las planillas vigentes de Drive, así que siempre están al día |
+| Límites | 512 MB de RAM (el sitio usa ~110 MB) y 750 horas al mes, suficientes para todo el mes |
 
 **Otros servicios**: la imagen Docker funciona en cualquier lugar (Railway, Google Cloud Run, un
-servidor propio o de la universidad). Con disco permanente, monta un volumen en `/app/data`:
+servidor propio). Con disco permanente, monta un volumen en `/app/data`:
 
 ```bash
 docker build -t judo-chile .
-docker run -d --name judo -p 8000:8000 --env-file .env -v judo-data:/app/data judo-chile
+docker run -d --name judo -p 8000:8000 -v judo-data:/app/data judo-chile
 ```
+
+## Configuración
+
+Todo es opcional; los valores por defecto ya apuntan a la carpeta de la federación. Se definen como
+variables de entorno o en un archivo `.env` (ver [.env.example](.env.example)).
+
+| Variable | Por defecto | Para qué sirve |
+|---|---|---|
+| `DRIVE_CARPETA_ID` | carpeta de FEJUCHILE | Carpeta de Drive a revisar |
+| `GOOGLE_API_KEY` | vacía | Clave de API de Google para listar la carpeta con la API oficial de Drive. Sin clave se lee la página pública de la carpeta, que funciona, pero depende de cómo Google arme esa página |
+| `ACTUALIZACION_CRON` | `0 23 * * sun` | Día y hora de la revisión (formato crontab) |
+| `ZONA_HORARIA` | `America/Santiago` | Zona horaria de la revisión y de las fechas |
+| `DATA_DIR` | `./data` | Dónde se guardan las planillas descargadas |
+| `VERSIONES_A_CONSERVAR` | `12` | Cuántas versiones anteriores se guardan |
+| `WEB_CONCURRENCY` | `2` en Docker | Procesos del servidor (en Render gratis: `1`) |
 
 ## Tareas habituales
 
 | Qué | Cómo |
 |---|---|
 | Forzar una actualización ahora | En Render: *Manual Deploy → Restart service* (al reiniciar descarga de nuevo). En otro servidor: `python -m judo.actualizar --forzar` |
-| Cambiar el día u hora de la revisión | `ACTUALIZACION_CRON` (ej. `0 22 * * sun`) |
-| Unificar un club escrito de otra forma | agrega la variante en `ALIAS_CLUBES` (`judo/datos.py`) |
-| Ver el estado de la última revisión | página "Cómo funciona" o `data/estado.json` |
+| Cambiar el día u hora de la revisión | Variable `ACTUALIZACION_CRON`, por ejemplo `0 22 * * sun` |
+| Unificar un club escrito de otra forma | Agrega la variante en `ALIAS_CLUBES` (`judo/datos.py`) |
+| Ver el estado de la última revisión | Página "Cómo funciona", o `data/estado.json` |
+
+## Advertencias sobre los datos
+
+- La temporada está en curso: quien aún no compite este año solo tiene su arrastre.
+- Un mismo club aparece escrito de varias formas en las planillas; el sitio unifica las variantes conocidas.
+- Los deportistas con la sigla "NAC" no tienen un club identificable y no entran al medallero de clubes.
+- Las planillas no traen RUT: se considera la misma persona a quien tiene el mismo nombre completo y sexo.
+- El lugar se recalcula ordenando por puntaje, porque algunas planillas traen errores de numeración.

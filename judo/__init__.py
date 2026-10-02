@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import datetime as dt
 import logging
-import secrets
 from zoneinfo import ZoneInfo
 
 from flask import Flask, request
@@ -32,12 +31,9 @@ def create_app(config: dict | None = None) -> Flask:
     app.config.from_object(Config)
     if config:
         app.config.update(config)
-    if not app.config["SECRET_KEY"]:
-        log.warning("SECRET_KEY no está definida: se usa una temporal y las sesiones se pierden al reiniciar")
-        app.config["SECRET_KEY"] = secrets.token_hex(32)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
-    # Detrás de un proxy HTTPS (Render, Railway, Cloud Run, nginx…) las URL de retorno salen con https.
+    # Detrás del proxy del servicio de hosting, los logs muestran la IP real del visitante.
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     zona = ZoneInfo(app.config["ZONA_HORARIA"])
@@ -55,9 +51,7 @@ def create_app(config: dict | None = None) -> Flask:
 
     app.jinja_env.filters.update(pts=fmt_puntos, pct=fmt_pct, fecha=fecha)
 
-    from . import auth, vistas
-    auth.init_app(app)
-    app.register_blueprint(auth.bp)
+    from . import vistas
     app.register_blueprint(vistas.bp)
 
     @app.after_request
@@ -68,10 +62,11 @@ def create_app(config: dict | None = None) -> Flask:
         resp.headers.setdefault(
             "Content-Security-Policy",
             "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-            "font-src https://fonts.gstatic.com; img-src 'self' data: https://*.googleusercontent.com; "
-            "script-src 'self'; form-action 'self' https://accounts.google.com; frame-ancestors 'none'")
-        if request.endpoint != "static":
-            resp.headers.setdefault("Cache-Control", "private, no-store")
+            "font-src https://fonts.gstatic.com; img-src 'self' data:; script-src 'self'; "
+            "form-action 'self'; frame-ancestors 'none'")
+        # Los datos cambian como máximo una vez por semana: 5 minutos de caché bastan.
+        if request.endpoint != "static" and resp.status_code == 200:
+            resp.headers.setdefault("Cache-Control", "public, max-age=300")
         return resp
 
     from . import programador

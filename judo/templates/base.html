@@ -29,13 +29,6 @@
       <label class="sr-only" for="q-top">Buscar deportista o club</label>
       <input id="q-top" type="search" name="q" value="{{ q|default('') }}" placeholder="Buscar deportista o club" autocomplete="off">
     </form>
-    {% if usuario %}
-    <div class="user">
-      {% if usuario.foto %}<img src="{{ usuario.foto }}" alt="" referrerpolicy="no-referrer">{% else %}<span class="avatar" aria-hidden="true">{{ usuario.nombre[:1]|upper }}</span>{% endif %}
-      <span class="nombre" title="{{ usuario.email }}">{{ usuario.nombre }}</span>
-      <form method="post" action="{{ url_for('auth.logout') }}"><button class="btn-ghost" type="submit">Salir</button></form>
-    </div>
-    {% endif %}
   </div>
 </header>
 {% block subnav %}{% endblock %}
