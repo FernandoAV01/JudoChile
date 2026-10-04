@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 from flask import Flask, request
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+from . import ubicaciones
 from .almacen import Almacen
 from .config import Config
 
@@ -22,8 +23,10 @@ def fmt_puntos(x) -> str:
 
 
 def fmt_pct(v) -> str:
+    """0,3 % · 3 % · 45 %: decimales solo bajo 10 % y cuando aportan."""
     v = float(v or 0) * 100
-    return (f"{v:.1f}".replace(".", ",") if v < 10 else f"{v:.0f}") + " %"
+    texto = f"{v:.1f}" if v < 10 else f"{v:.0f}"
+    return texto.removesuffix(".0").replace(".", ",") + " %"
 
 
 def create_app(config: dict | None = None) -> Flask:
@@ -49,7 +52,17 @@ def create_app(config: dict | None = None) -> Flask:
             return v.strftime("%d-%m-%Y %H:%M") if con_hora else v.strftime("%d-%m-%Y")
         return v.strftime("%d-%m-%Y")
 
-    app.jinja_env.filters.update(pts=fmt_puntos, pct=fmt_pct, fecha=fecha)
+    def enumerar(items) -> str:
+        """['A', 'B', 'C'] -> 'A, B y C'"""
+        items = list(items)
+        return " y ".join([", ".join(items[:-1]), items[-1]]) if len(items) > 1 else "".join(items)
+
+    def pl(n, singular: str, plural: str) -> str:
+        """Elige singular o plural según n: {{ n|pl('podio', 'podios') }}"""
+        return singular if n == 1 else plural
+
+    app.jinja_env.filters.update(pts=fmt_puntos, pct=fmt_pct, fecha=fecha, enumerar=enumerar, pl=pl,
+                                 region_larga=ubicaciones.nombre_largo)
 
     from . import vistas
     app.register_blueprint(vistas.bp)

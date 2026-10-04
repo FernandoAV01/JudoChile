@@ -1,8 +1,13 @@
 # Judo Chile · Ranking nacional
 
 Sitio web que analiza el **Ranking Nacional de la Federación de Judo de Chile (FEJUCHILE)** y lo
-explica para cualquier persona: qué clubes y deportistas destacan en el país, el ranking completo de
-cada edad y peso, y una ficha por club y por deportista.
+explica para cualquier persona: qué clubes y deportistas destacan en el país y en cada zona, el ranking
+completo de cada edad y peso, qué clubes suman más puntos en cada categoría, y una ficha por club
+(con su ciudad, región y zona) y por deportista.
+
+Creado por **Fernando Arellano** · [GitHub](https://github.com/FernandoAV01) ·
+[LinkedIn](https://www.linkedin.com/in/fernando-arellano-v) · contacto: arellano.fernando.v@gmail.com.
+Es un proyecto independiente, no un sitio oficial de la federación.
 
 Los datos salen de la [carpeta pública de Google Drive](https://drive.google.com/drive/folders/1g2ZvhjbvHZ9SJYYw8cqsdCQn5ZY3WESf)
 donde la federación publica las planillas. El sitio la revisa solo **todos los domingos a las 23:00
@@ -15,10 +20,29 @@ El sitio es público: cualquier persona con el enlace puede verlo.
 | Página | Contenido |
 |---|---|
 | **Resumen** | Cifras del país, clubes con más puntos, dónde gana cada club por edad, figuras (más puntos, mejor temporada, ranking internacional), categorías más dominadas y más reñidas |
-| **Categorías** | Se elige la edad (Sub 13 a Absoluta) y luego el peso. Muestra el podio y el ranking completo, con la composición del puntaje de cada deportista |
-| **Clubes** | Todos los clubes ordenados por puntos totales (suma del puntaje de sus deportistas) y la ficha de cada uno: sus números 1, presencia por edad y todos sus deportistas |
+| **Categorías** | Se elige la edad (Sub 13 a Absoluta) y luego el peso. Muestra el podio y el ranking completo de deportistas, con el origen de los puntos de cada uno |
+| **Clubes** | Todos los clubes ordenados por puntos totales (suma de los puntos de sus deportistas), con su región. La ficha de cada club muestra su ciudad, región y zona, sus números 1, su presencia por edad y todos sus deportistas |
+| **Categorías por clubes** | Se elige la edad y el peso, y se ve el ranking de clubes de esa categoría: cuántos puntos suman sus deportistas y quién es su mejor ubicado |
 | **Deportistas** | Ficha con todas sus categorías, lugar, puntaje y puntos internacionales |
-| **Cómo funciona** | Cómo se calcula el puntaje, estado de la última actualización y advertencias sobre los datos |
+| **Cómo funciona** | Cómo se calcula el puntaje, qué regiones forman cada zona, de dónde sale la ubicación de los clubes y advertencias sobre los datos |
+
+Las secciones Categorías, Clubes y Categorías por clubes se pueden **filtrar por zona** (Norte, Centro
+o Sur). Al filtrar, los lugares se calculan dentro de la zona y también se muestra el lugar nacional.
+
+### Zonas y ubicación de los clubes
+
+La zona sale de la región del club, con la división que usa la federación para sus campeonatos zonales
+en 2026:
+
+| Zona | Regiones |
+|---|---|
+| Norte | Arica y Parinacota, Tarapacá, Antofagasta, Atacama y Coquimbo |
+| Centro | Valparaíso, Metropolitana, O'Higgins y Maule |
+| Sur | Ñuble, Biobío, La Araucanía, Los Ríos, Los Lagos, Aysén y Magallanes |
+
+La ciudad y la región de cada club están en [`judo/clubes.csv`](judo/clubes.csv) y vienen del
+[registro de clubes de la federación](https://app.fejuchile.cl/show/clubs). Se verificaron cruzando a
+los deportistas del ranking con el registro de judokas de la federación (octubre de 2026).
 
 ### Cómo se calcula el puntaje
 
@@ -31,7 +55,9 @@ categoría. Absoluta, Sub 21 y Sub 18 traen además un ranking internacional que
 ```
 judo/
   datos.py        lee las planillas .xlsx (detecta el año solo; sirve para 2027 en adelante)
-  analisis.py     clasificación de clubes, figuras, competitividad y búsquedas
+  analisis.py     clasificación de clubes, figuras, competitividad, zonas y búsquedas
+  ubicaciones.py  regiones, zonas y lectura de clubes.csv
+  clubes.csv      ficha de cada club: nombre visible, ciudad, comuna, región y fuente
   drive.py        lista y descarga la carpeta pública de Drive
   almacen.py      guarda cada versión descargada en data/ y recarga los datos cuando hay una nueva
   programador.py  revisión semanal automática
@@ -115,12 +141,14 @@ variables de entorno o en un archivo `.env` (ver [.env.example](.env.example)).
 | Forzar una actualización ahora | En Render: *Manual Deploy → Restart service* (al reiniciar descarga de nuevo). En otro servidor: `python -m judo.actualizar --forzar` |
 | Cambiar el día u hora de la revisión | Variable `ACTUALIZACION_CRON`, por ejemplo `0 22 * * sun` |
 | Unificar un club escrito de otra forma | Agrega la variante en `ALIAS_CLUBES` (`judo/datos.py`) |
+| Agregar o corregir la ubicación de un club | Edita su fila en `judo/clubes.csv` (la columna `clave` es el nombre del club en las planillas, ya unificado). La zona se calcula sola a partir de la región. Un club nuevo sin fila aparece como "Sin confirmar" |
 | Ver el estado de la última revisión | Página "Cómo funciona", o `data/estado.json` |
 
 ## Advertencias sobre los datos
 
 - La temporada está en curso: quien aún no compite este año solo tiene su arrastre.
 - Un mismo club aparece escrito de varias formas en las planillas; el sitio unifica las variantes conocidas.
-- Los deportistas con la sigla "NAC" no tienen un club identificable y no entran a la clasificación de clubes.
+- "NAC" en las planillas es el club del colegio North American College de Arica.
+- Algunos clubes cambiaron de nombre (por ejemplo, Ozanam hoy es Chuseikan) y el sitio los muestra unidos.
 - Las planillas no traen RUT: se considera la misma persona a quien tiene el mismo nombre completo y sexo.
 - El lugar se recalcula ordenando por puntaje, porque algunas planillas traen errores de numeración.

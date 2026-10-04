@@ -100,11 +100,16 @@ img { max-width: 100%; }
 .subnav { background: var(--surface); border-bottom: 1px solid var(--line); }
 .subnav .wrap { display: grid; gap: var(--sp-2); padding-block: var(--sp-3); }
 .pill-row { display: flex; align-items: center; gap: var(--sp-2); overflow-x: auto; scrollbar-width: thin; padding-bottom: 2px; }
-.pill-label { flex: none; min-width: 72px; font: 600 var(--t-xs)/1 var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+/* La etiqueta queda fija al desplazar la fila en pantallas angostas */
+.pill-label { flex: none; min-width: 72px; font: 600 var(--t-xs)/1 var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+  position: sticky; left: 0; z-index: 1; align-self: stretch; display: flex; align-items: center; background: var(--surface); padding-right: var(--sp-2);
+  box-shadow: 10px 0 8px -8px color-mix(in srgb, var(--ink) 18%, transparent); }
 .pill { flex: none; font: 600 var(--t-sm)/1 var(--body); padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line);
   background: var(--surface); color: var(--ink); text-decoration: none; font-variant-numeric: tabular-nums; }
 .pill:hover { border-color: var(--accent); color: var(--accent); }
 .pill[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+/* Edad elegida mientras se mira uno de sus pesos */
+.pill[aria-current="true"] { border-color: var(--accent); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 
 /* ---------- Estructura de página ---------- */
 main.wrap { padding-bottom: var(--sp-8); }
@@ -122,6 +127,7 @@ main.wrap { padding-bottom: var(--sp-8); }
 .grid-2 { display: grid; gap: var(--sp-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: start; }
 .grid-3 { display: grid; gap: var(--sp-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); align-items: start; }
 .more { justify-self: start; font-weight: 600; text-decoration: none; }
+.links { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-6); }
 .more::after { content: " →"; }
 
 /* Portada: única franja oscura del sitio */
@@ -170,6 +176,7 @@ table.t { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
 .t .rk { width: 1%; padding-right: 4px; }
 .t td.rk .muted { margin-left: 6px; font-size: var(--t-xs); }
 .t .w-bar { width: 32%; min-width: 150px; }
+.t thead th.w-bar { white-space: normal; }
 .t td.g, .t td.s, .t td.b { font-weight: 700; }
 .t td.g { color: var(--gold); } .t td.s { color: var(--silver); } .t td.b { color: var(--bronze); }
 .t .sub { display: block; font-weight: 400; font-size: var(--t-xs); color: var(--muted); }
@@ -271,20 +278,37 @@ table.t { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
 .empty { padding: var(--sp-6); text-align: center; color: var(--muted); }
 
 /* ---------- Pie ---------- */
-.footer { border-top: 1px solid var(--line); padding-block: var(--sp-5) var(--sp-7); display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-6); font-size: var(--t-sm); color: var(--muted); }
-.footer a { color: var(--muted); }
+.footer { border-top: 1px solid var(--line); background: var(--surface); font-size: var(--t-sm); color: var(--ink-2); }
+.footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: var(--sp-5) var(--sp-7); padding-block: var(--sp-6) var(--sp-7); }
+.footer section { display: grid; gap: var(--sp-2); align-content: start; }
+.footer-titulo { font: 700 var(--t-md)/1.2 var(--display); color: var(--ink); }
+.footer-titulo b { font-weight: 700; }
+.footer-links { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-5); font-weight: 600; }
+.footer a { color: var(--accent); }
+
+/* Aviso del filtro de zona */
+.aviso { max-width: none; padding: var(--sp-3) var(--sp-4); border-radius: var(--radius-sm); background: var(--accent-soft); color: var(--ink-2); font-size: var(--t-sm); }
+.aviso a { font-weight: 600; margin-left: var(--sp-1); }
+
+/* Ficha de ubicación de un club */
+.ficha { display: flex; flex-wrap: wrap; gap: var(--sp-3) var(--sp-6); margin: 0; }
+.ficha div { display: grid; gap: 2px; }
+.ficha dt { font: 700 var(--t-xs)/1.2 var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.ficha dd { margin: 0; font-weight: 600; }
+
+/* Lugar nacional junto al lugar en la zona */
+.t td .nacional { margin-left: 6px; font-size: var(--t-xs); color: var(--muted); }
 
 /* ---------- Pantallas angostas ---------- */
 @media (max-width: 860px) {
   .masthead-row { gap: 0 var(--sp-4); }
-  .mainnav { order: 3; width: 100%; margin-right: 0; border-top: 1px solid var(--navy-line); }
+  .mainnav { order: 3; width: 100%; margin-right: 0; border-top: 1px solid var(--navy-line); flex-wrap: wrap; overflow: visible; }
   .mainnav a { padding: 12px var(--sp-3) 9px; }
   .search { order: 4; width: 100%; padding-bottom: var(--sp-3); }
   .search input { width: 100%; }
 }
 @media (max-width: 560px) {
-  .mainnav { justify-content: space-between; }
-  .mainnav a { padding-inline: 6px; font-size: var(--t-sm); }
+  .mainnav a { padding-inline: 8px; font-size: var(--t-sm); }
   .page-head h1 { font-size: var(--t-xl); }
   .stat b { font-size: var(--t-xl); }
   .formula .op { display: none; }

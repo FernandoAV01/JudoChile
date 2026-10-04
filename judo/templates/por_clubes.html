@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+{% block title %}Clubes en {{ nombre }}{% if zona %} · Zona {{ zona_nombre }}{% endif %}{% endblock %}
+{% block subnav %}{{ ui.subnav_categorias(grupo_slug, por_sexo, cat.cat_slug if cat else None, 'vistas.por_clubes_grupo', 'vistas.por_clubes_categoria') }}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <nav class="crumbs" aria-label="Ruta">
+    <a href="{{ url_for('vistas.por_clubes_inicio', zona=zona or None) }}">Categorías por clubes</a><span aria-hidden="true">/</span>
+    {% if cat %}
+    <a href="{{ url_for('vistas.por_clubes_grupo', grupo=grupo_slug, zona=zona or None) }}">{{ grupo[0] }}</a><span aria-hidden="true">/</span>
+    <span>{{ cat.sexo_txt }} {{ cat.peso }}</span>
+    {% else %}<span>{{ grupo[0] }}</span>{% endif %}
+  </nav>
+  <h1>Clubes en {{ nombre }}{% if zona %} · Zona {{ zona_nombre }}{% endif %}</h1>
+  <p class="lead">
+    {% if cat %}Los clubes ordenados por la suma de los puntos de ranking de sus deportistas en esta categoría.
+    {% else %}Los clubes ordenados por la suma de los puntos de ranking de sus deportistas {{ grupo[0] }}, en todos los pesos. Elige un peso arriba para ver una sola categoría.{% endif %}
+  </p>
+  {{ ui.aviso_zona('clubes') }}
+</div>
+
+<div class="stack">
+  {% if clubes %}
+  <div class="stats">
+    <div class="stat"><b>{{ clubes|length }}</b><span>{{ clubes|length|pl('club tiene', 'clubes tienen') }} deportistas en {{ 'esta categoría' if cat else 'esta edad' }}</span></div>
+    {% set total_dep = clubes|sum(attribute='deportistas') %}
+    <div class="stat"><b>{{ total_dep }}</b><span>{{ total_dep|pl('deportista', 'deportistas') }} en total</span></div>
+    {% set lider = clubes[0] %}
+    <div class="stat"><b>{{ lider.puntos|pts }}</b><span>puntos de {{ lider.club_nombre }}, el club que más suma</span></div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="t">
+      <thead><tr><th class="n">#</th><th>Club</th><th>Región</th><th class="n">Puntos</th><th class="w-bar"><span class="sr-only">Gráfico de puntos</span></th>
+        <th class="n">Deportistas</th>
+        {% if not cat %}<th class="n" title="Pesos donde el club tiene al 1.º del ranking">1.º</th><th class="n">2.º</th><th class="n">3.º</th>{% endif %}
+        <th>Su mejor deportista</th></tr></thead>
+      <tbody>
+      {% for c in clubes %}
+        <tr>
+          <td class="n">{{ c.puesto }}</td>
+          <th scope="row">{{ ui.club(c.club_nombre, c.club_slug) }}</th>
+          <td>{{ ui.region(c.region) }}</td>
+          <td class="n"><b>{{ c.puntos|pts }}</b></td>
+          <td>{{ ui.bar(c.puntos, clubes[0].puntos) }}</td>
+          <td class="n">{{ c.deportistas }}</td>
+          {% if not cat %}<td class="n g">{{ c.oro }}</td><td class="n s">{{ c.plata }}</td><td class="n b">{{ c.bronce }}</td>{% endif %}
+          <td>{{ ui.rank(c.mejor_pos) }} {{ ui.dep(c.mejor, c.mejor_slug) }}{% if not cat %} <span class="muted">· {{ c.mejor_peso }}</span>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="caption">El número junto a cada deportista es su lugar en el ranking nacional.
+    {% if cat %}<a href="{{ url_for('vistas.categoria', grupo=grupo_slug, cat=cat.cat_slug, zona=zona or None) }}">Ver el ranking de deportistas de esta categoría</a>.{% endif %}</p>
+  {% else %}
+  <div class="card empty">{% if zona %}Ningún club de la Zona {{ zona_nombre }} tiene deportistas en {{ nombre }}.{% else %}No hay clubes con deportistas en {{ nombre }}.{% endif %}</div>
+  {% endif %}
+</div>
+{% endblock %}

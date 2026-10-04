@@ -5,9 +5,11 @@
 {%- endmacro %}
 
 {% macro tag(competencia, ventaja=None) -%}
+{% if competencia %}
 {% set cls = {'Muy reñida': 'renida', 'Disputada': 'disputada', 'Dominada': 'dominada', 'Sin rivales': 'neutra'}[competencia] %}
 {% if cls == 'neutra' %}<span class="tag tag-neutra" title="Hay un solo deportista en esta categoría">{{ competencia }}</span>
 {%- else %}<span class="tag tag-{{ cls }}" title="Ventaja del 1.º sobre el 2.º">{{ competencia }}{% if ventaja is not none %} · {{ ventaja|pct }}{% endif %}</span>{% endif %}
+{% endif %}
 {%- endmacro %}
 
 {% macro club(nombre, slug) -%}
@@ -22,6 +24,10 @@
 {{ url_for('vistas.categoria', grupo=grupo_slug, cat=cat_slug) }}
 {%- endmacro %}
 
+{% macro region(nombre) -%}
+{{ nombre or 'Sin confirmar' }}
+{%- endmacro %}
+
 {% macro bar(valor, maximo, variante='') -%}
 <span class="bar {{ variante }}" title="{{ valor|pts }} pts"><span style="width:{{ '%.1f'|format(100 * valor / (maximo or 1)) }}%"></span></span>
 {%- endmacro %}
@@ -34,25 +40,29 @@
 {%- endmacro %}
 
 {% macro leyenda_composicion() -%}
-<div class="legend"><span><i class="sw-s1-soft"></i>Arrastre (50 % del año anterior)</span><span><i class="sw-s1"></i>Puntos de torneos {{ rk.anio }}</span></div>
+<div class="legend"><span><i class="sw-s1-soft"></i>Arrastre (50 % de los puntos del año pasado)</span><span><i class="sw-s1"></i>Puntos ganados en {{ rk.anio }}</span></div>
 {%- endmacro %}
 
-{% macro tabla_clubes(filas, maximo) -%}
+{# Tabla de clubes ordenada por puntos. Con con_nacional=True agrega el puesto en todo el país. #}
+{% macro tabla_clubes(filas, maximo, id='tabla-clubes', con_nacional=False) -%}
 <div class="table-wrap">
-<table class="t" id="tabla-clubes">
-  <thead><tr><th class="n">#</th><th>Club</th><th class="n">Puntos</th><th class="w-bar"><span class="sr-only">Gráfico de puntos</span></th>
-    <th class="n">Deportistas</th><th class="n" title="Categorías donde el club tiene al n.º 1">1.º</th><th class="n">2.º</th><th class="n">3.º</th>
-    <th class="n" title="Deportistas entre los 8 primeros de su categoría">Top 8</th></tr></thead>
+<table class="t" id="{{ id }}">
+  <thead><tr><th class="n">#</th><th>Club</th><th>Región</th><th class="n">Puntos</th><th class="w-bar"><span class="sr-only">Gráfico de puntos</span></th>
+    <th class="n">Deportistas</th><th class="n" title="Categorías donde el club tiene al 1.º del ranking">1.º</th><th class="n">2.º</th><th class="n">3.º</th>
+    <th class="n" title="Deportistas entre los 8 primeros de su categoría">Top 8</th>
+    {% if con_nacional %}<th class="n" title="Puesto del club en todo el país">Nacional</th>{% endif %}</tr></thead>
   <tbody>
   {% for c in filas %}
     <tr data-nombre="{{ c.club_nombre|lower }}">
-      <td class="n">{{ c.lugar }}</td>
+      <td class="n">{{ c.puesto }}</td>
       <th scope="row">{{ club(c.club_nombre, c.club_slug) }}</th>
+      <td>{{ region(c.region) }}</td>
       <td class="n"><b>{{ c.puntos|pts }}</b></td>
       <td>{{ bar(c.puntos, maximo) }}</td>
       <td class="n">{{ c.deportistas }}</td>
       <td class="n g">{{ c.oro }}</td><td class="n s">{{ c.plata }}</td><td class="n b">{{ c.bronce }}</td>
       <td class="n">{{ c.top8 }}</td>
+      {% if con_nacional %}<td class="n">{{ c.lugar }}.º</td>{% endif %}
     </tr>
   {% endfor %}
   </tbody>
@@ -60,21 +70,46 @@
 </div>
 {%- endmacro %}
 
-{% macro subnav_categorias(grupo_slug, por_sexo=None, cat_slug=None) -%}
-<nav class="subnav" aria-label="Categorías"><div class="wrap">
+{# Filtro por zona: mantiene la página actual y cambia solo ?zona= #}
+{% macro filtro_zona() -%}
+<div class="pill-row" role="group" aria-label="Filtrar por zona"><span class="pill-label">Zona</span>
+  <a class="pill" href="{{ url_for(request.endpoint, **request.view_args) }}"{% if not zona %} aria-current="page"{% endif %}>Todo el país</a>
+  {% for z, nombre in ZONAS %}
+  <a class="pill" href="{{ url_for(request.endpoint, zona=z, **request.view_args) }}" title="{{ regiones_de_zona[z]|enumerar }}"{% if zona == z %} aria-current="page"{% endif %}>{{ nombre }}</a>
+  {% endfor %}
+</div>
+{%- endmacro %}
+
+{# Aviso que explica qué muestra el filtro de zona activo #}
+{% macro aviso_zona(que='deportistas de clubes') -%}
+{% if zona %}
+<p class="aviso">Solo se muestran {{ que }} de la <b>Zona {{ zona_nombre }}</b>: {{ regiones_de_zona[zona]|enumerar }}.
+  <a href="{{ url_for(request.endpoint, **request.view_args) }}">Ver todo el país</a></p>
+{% endif %}
+{%- endmacro %}
+
+{# Navegación por edad y peso. Sirve para "Categorías" y "Categorías por clubes" (cambian los destinos). #}
+{% macro subnav_categorias(grupo_slug, por_sexo=None, cat_slug=None, ep_grupo='vistas.grupo', ep_cat='vistas.categoria') -%}
+<nav class="subnav" aria-label="Edad, peso y zona"><div class="wrap">
   <div class="pill-row"><span class="pill-label">Edad</span>
     {% for etiqueta, _, gslug in grupos_nav %}
-    <a class="pill" href="{{ url_for('vistas.grupo', grupo=gslug) }}"{% if gslug == grupo_slug %} aria-current="page"{% endif %}>{{ etiqueta }}</a>
+    <a class="pill" href="{{ url_for(ep_grupo, grupo=gslug, zona=zona or None) }}"{% if gslug == grupo_slug and not cat_slug %} aria-current="page"{% elif gslug == grupo_slug %} aria-current="true"{% endif %}>{{ etiqueta }}</a>
     {% endfor %}
   </div>
   {% if por_sexo %}{% for sexo, cats in por_sexo.items() %}
   <div class="pill-row"><span class="pill-label">{{ sexo }}</span>
     {% for c in cats %}
-    <a class="pill" href="{{ cat_url(c.grupo_slug, c.cat_slug) }}"{% if c.cat_slug == cat_slug %} aria-current="page"{% endif %}>{{ c.peso }}</a>
+    <a class="pill" href="{{ url_for(ep_cat, grupo=c.grupo_slug, cat=c.cat_slug, zona=zona or None) }}"{% if c.cat_slug == cat_slug %} aria-current="page"{% endif %}>{{ c.peso }}</a>
     {% endfor %}
   </div>
   {% endfor %}{% endif %}
+  {{ filtro_zona() }}
 </div></nav>
+{%- endmacro %}
+
+{# Barra secundaria que solo tiene el filtro de zona (sección Clubes) #}
+{% macro subnav_zona() -%}
+<nav class="subnav" aria-label="Zona"><div class="wrap">{{ filtro_zona() }}</div></nav>
 {%- endmacro %}
 
 {% macro marca(tam=30) -%}

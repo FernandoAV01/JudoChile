@@ -24,6 +24,8 @@ from pathlib import Path
 import openpyxl
 import pandas as pd
 
+from . import ubicaciones
+
 log = logging.getLogger(__name__)
 
 # clave en el nombre del archivo -> (etiqueta, orden, slug)
@@ -75,7 +77,8 @@ ALIAS_CLUBES = {
     "PINTANA": "LA PINTANA",
     "PGN": "PROY G NAVIA", "PROY. G NAVIA": "PROY G NAVIA",
     "RISEI AKURA": "RISEI SAKURA",
-    "SAMN SEI": "SAN SEI", "SANSEI": "SAN SEI", "SAN SEI PTO VARAS": "SAN SEI",
+    # "SAN SEI" (La Reina) y "SAN SEI PTO VARAS" (Puerto Varas) son clubes distintos en el registro de la federación.
+    "SAMN SEI": "SAN SEI", "SANSEI": "SAN SEI",
     "SAIGO KIDS": "SHIRO SAIGO KIDS",
     "SHIN GI TAI PTO NATALES": "SHIN GI TAI",
     "SHOGAI": "SHOGAI ÑUÑOA",
@@ -85,9 +88,22 @@ ALIAS_CLUBES = {
     "VIÑA": "VIÑA DEL MAR",
     "YAMAARASHI ANCUD": "YAMA ARASHI ANCUD",
     "YAMARASHI": "YAMA HARASHI",
+    # Confirmadas porque un mismo deportista aparece con ambos nombres, o por el registro de clubes:
+    "CHEISUKAN": "CHUSEIKAN",
+    "TOME": "KAZOKU TOME",
+    "KAZOKU JC": "KAZOKU LS",
+    "SHIJOUKI": "SHOUJIKI",
+    "CASABLANCA": "JITA KYOEI",
+    "PUC": "UC",
+    # Clubes que cambiaron de nombre o que la federación escribe con siglas (registro de clubes de FEJUCHILE):
+    "OZANAM": "CHUSEIKAN",           # Club de Judo Ozanam pasó a llamarse Chuseikan
+    "ALEMAN": "CDUSS",               # hoy Club Deportivo Universidad San Sebastián
+    "EIM": "ESTADIO ISRAELITA",      # Estadio Israelita Maccabi
+    "AUSTRAL": "UACH",               # Universidad Austral de Chile
+    "PDI": "ESCUELA PDI",
 }
-# "NAC" no identifica a un club concreto: se muestra, pero no entra a la clasificación de clubes.
-SIN_CLUB = {"NAC", ""}
+# Filas sin club en la planilla. ("NAC" sí es un club: el North American College de Arica.)
+SIN_CLUB = {""}
 SLUG_SIN_CLUB = "sin-club"
 
 
@@ -119,7 +135,7 @@ def normalizar_club(txt) -> str:
 
 
 def nombre_club(c: str) -> str:
-    return "Sin club (NAC)" if c in SIN_CLUB else c.title()
+    return "Sin club" if c in SIN_CLUB else c.title()
 
 
 def slug_club(c: str) -> str:
@@ -257,8 +273,12 @@ def cargar_directorio(directorio: str | Path) -> tuple[pd.DataFrame, int]:
     df["pos"] = df.groupby("cat_id").cumcount() + 1
     df["dep_slug"] = df.deportista.map(slug) + "-" + df.sexo.str.lower()
     df["club_slug"] = df.club.map(slug_club)
-    df["club_nombre"] = df.club.map(nombre_club)
     df["con_club"] = ~df.club.isin(SIN_CLUB)
+    # Nombre visible, región y zona salen de la ficha de cada club (judo/clubes.csv).
+    fichas = ubicaciones.cargar()
+    df["club_nombre"] = df.club.map(lambda c: fichas.get(c, {}).get("nombre") or nombre_club(c))
+    df["region"] = df.club.map(lambda c: fichas.get(c, {}).get("region", ""))
+    df["zona"] = df.region.map(ubicaciones.zona_de)
     return df.reset_index(drop=True), anio
 
 

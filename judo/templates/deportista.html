@@ -6,26 +6,26 @@
 <div class="page-head">
   <span class="eyebrow">Deportista · {{ dep.sexo_txt }}</span>
   <h1>{{ dep.nombre }}</h1>
-  <p class="lead">{% for c in dep.clubes %}{{ ui.club(c.club_nombre, c.club_slug) }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
+  <p class="lead">{% for c in dep.clubes %}{{ ui.club(c.club_nombre, c.club_slug) }}{% if c.region %} <span class="muted">({{ c.region|region_larga }})</span>{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</p>
 </div>
 
 <div class="stack">
   <div class="stats">
     <div class="stat"><b>{{ dep.mejor_pos }}.º</b><span>mejor lugar en el ranking</span></div>
-    <div class="stat"><b>{{ dep.max_total|pts }}</b><span>puntos de ranking (mejor categoría)</span></div>
-    <div class="stat"><b>{{ dep.n_torneos }}</b><span>torneos con puntos en {{ rk.anio }}</span></div>
+    <div class="stat"><b>{{ dep.max_total|pts }}</b><span>puntos de ranking en su mejor categoría</span></div>
+    <div class="stat"><b>{{ dep.n_torneos }}</b><span>{{ 'torneo' if dep.n_torneos == 1 else 'torneos' }} con puntos en {{ rk.anio }}</span></div>
     <div class="stat"><b>{{ dep.max_intl|pts if dep.max_intl else '–' }}</b><span>puntos de ranking internacional</span></div>
   </div>
 </div>
 
 <section class="section">
   <div class="section-head"><h2>Sus categorías</h2>
-    <p>Dónde aparece en el ranking {{ rk.anio }} y de dónde viene su puntaje.</p></div>
+    <p>Las categorías en que aparece en el ranking {{ rk.anio }} y de dónde vienen sus puntos.</p></div>
   {{ ui.leyenda_composicion() }}
   <div class="table-wrap">
     <table class="t">
-      <thead><tr><th>Categoría</th><th class="rk">Lugar</th><th class="n">Total</th><th class="w-bar">Composición</th><th class="n">Arrastre</th>
-        <th class="n">Torneos {{ rk.anio }}</th><th class="n">N.º torneos</th><th class="n">Internacional</th></tr></thead>
+      <thead><tr><th>Categoría</th><th class="rk">Lugar</th><th class="n">Total</th><th class="w-bar">De dónde vienen los puntos</th><th class="n">Arrastre</th>
+        <th class="n">Ganados en {{ rk.anio }}</th><th class="n" title="Torneos de {{ rk.anio }} en que sumó puntos">Torneos</th><th class="n">Internacional</th></tr></thead>
       <tbody>
       {% for d in dep.filas %}
         <tr>
@@ -42,6 +42,6 @@
       </tbody>
     </table>
   </div>
-  <p class="caption">La barra se mide contra el puntaje del líder de cada categoría.</p>
+  <p class="caption">Cada barra se compara con el puntaje del 1.º de esa categoría.</p>
 </section>
 {% endblock %}

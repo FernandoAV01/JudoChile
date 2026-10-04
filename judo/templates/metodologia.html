@@ -5,26 +5,50 @@
 {% block content %}
 <div class="page-head">
   <h1>Cómo funciona el ranking</h1>
-  <p class="lead">Qué significa cada número del sitio, de dónde salen los datos y qué tener en cuenta al leerlos.</p>
+  <p class="lead">Qué significa cada número del sitio, de dónde salen los datos y qué conviene tener en cuenta al leerlos.</p>
 </div>
 
 <section class="section">
   <div class="section-head"><h2>El puntaje</h2>
-    <p>Cada deportista suma puntos según el torneo y el lugar en que termina. Así el ranking premia la constancia y también los resultados recientes.</p></div>
+    <p>Cada deportista suma puntos según el torneo y el lugar en que termina. Así, el ranking premia tanto la constancia como los resultados recientes.</p></div>
   {% include "_formula.html" %}
   <dl class="glossary">
-    <div><dt>Categoría</dt><dd>Edad + sexo + peso. Por ejemplo, Sub 15 · Mujeres · −52 kg.</dd></div>
-    <div><dt>RE · ZO · NA</dt><dd>Campeonato regional, zonal (norte, centro o sur) y nacional.</dd></div>
-    <div><dt>Ranking internacional</dt><dd>Puntos aparte por torneos en el extranjero. Solo en Absoluta, Sub 21 y Sub 18.</dd></div>
-    <div><dt>Podio</dt><dd>Estar 1.º, 2.º o 3.º del ranking de una categoría.</dd></div>
+    <div><dt>Categoría</dt><dd>Edad, sexo y peso. Por ejemplo: Sub 15 · Mujeres · −52 kg.</dd></div>
+    <div><dt>RE · ZO · NA</dt><dd>Siglas de las planillas: campeonato regional, zonal (Norte, Centro o Sur) y nacional.</dd></div>
+    <div><dt>Ranking internacional</dt><dd>Puntos aparte por torneos en el extranjero. Solo existe en Absoluta, Sub 21 y Sub 18.</dd></div>
+    <div><dt>Podio</dt><dd>Ir 1.º, 2.º o 3.º en el ranking de una categoría.</dd></div>
     <div><dt>Top 8</dt><dd>Estar entre los ocho primeros de una categoría.</dd></div>
-    <div><dt>Nivel de competencia</dt><dd>Ventaja del 1.º sobre el 2.º: {{ ui.tag('Muy reñida') }} menos de 10 %, {{ ui.tag('Disputada') }} 10 a 30 %, {{ ui.tag('Dominada') }} más de 30 %. {{ ui.tag('Sin rivales') }} hay un solo deportista.</dd></div>
+    <div><dt>Nivel de competencia</dt><dd>Cuánto le saca el 1.º al 2.º: {{ ui.tag('Muy reñida') }} menos de 10 %; {{ ui.tag('Disputada') }} entre 10 % y 30 %; {{ ui.tag('Dominada') }} más de 30 %; {{ ui.tag('Sin rivales') }} hay un solo deportista.</dd></div>
   </dl>
 </section>
 
 <section class="section">
+  <div class="section-head"><h2>Zonas y ubicación de los clubes</h2>
+    <p>La federación divide el país en tres zonas, que tienen su propio campeonato zonal. Al filtrar por zona, el sitio muestra solo a los clubes de esa zona y a sus deportistas, y vuelve a calcular los lugares entre ellos; el lugar en el ranking nacional también aparece.</p></div>
+  <div class="grid-3">
+    {% for z, nombre_z in ZONAS %}
+    <div class="card">
+      <div class="card-head"><h3>Zona {{ nombre_z }}</h3><p class="caption">{{ regiones_de_zona[z]|enumerar }}</p></div>
+      {% set de_zona = clubes|selectattr('zona', 'equalto', z)|list %}
+      <p><a href="{{ url_for('vistas.clubes', zona=z) }}">{{ de_zona|length }} {{ de_zona|length|pl('club', 'clubes') }} en el ranking</a></p>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="card">
+    <ul class="dlist">
+      <li><span class="title">De dónde sale la ubicación</span>
+        <span class="meta">La ciudad y la región de cada club vienen del <a href="https://app.fejuchile.cl/show/clubs" target="_blank" rel="noopener">registro de clubes de la federación</a>. Para comprobarlo, en octubre de 2026 cruzamos a los deportistas del ranking con el registro de judokas de la federación: en 120 de los 129 clubes con deportistas inscritos, el club calza exactamente, y en los 9 restantes calza la región (son deportistas que se cambiaron de club dentro de la misma zona).</span></li>
+      <li><span class="title">Coquimbo</span>
+        <span class="meta">En 2022 competía en la Zona Centro; en 2026 sus clubes compiten en el zonal Norte. El sitio usa la división de 2026.</span></li>
+      <li><span class="title">Clubes sin ubicación</span>
+        <span class="meta">{% if res.clubes_sin_region %}{{ res.clubes_sin_region }} {{ 'club no aparece' if res.clubes_sin_region == 1 else 'clubes no aparecen' }} en el registro de la federación; {{ 'figura' if res.clubes_sin_region == 1 else 'figuran' }} como “Sin confirmar” y no {{ 'entra' if res.clubes_sin_region == 1 else 'entran' }} en los filtros de zona.{% else %}Todos los clubes del ranking tienen ubicación confirmada.{% endif %} Si en una actualización aparece un club nuevo, se verá como “Sin confirmar” hasta que se agregue al archivo de clubes del sitio.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section class="section">
   <div class="section-head"><h2>De dónde salen los datos</h2>
-    <p>El sitio revisa automáticamente la carpeta pública donde la Federación de Judo de Chile publica las planillas del ranking. Solo descarga cuando alguna planilla cambió.</p></div>
+    <p>El sitio revisa automáticamente la carpeta pública donde la Federación de Judo de Chile publica las planillas del ranking, y solo las descarga cuando alguna cambió.</p></div>
   <div class="grid-2">
     <div class="card">
       <div class="card-head"><h3>Estado de la actualización</h3></div>
@@ -32,7 +56,7 @@
         <li><span class="title">Planillas vigentes</span><span class="meta">Publicadas por la federación el {{ estado.fecha_planillas|fecha }}</span></li>
         <li><span class="title">Última revisión</span>
           <span class="meta">{{ estado.ultima_revision|fecha(true) }} ·
-            {% if estado.resultado == 'error' %}no se pudo completar; se mantienen los datos anteriores{% elif estado.resultado == 'sin cambios' %}sin cambios en la carpeta{% else %}se descargó una versión nueva{% endif %}</span></li>
+            {% if estado.resultado == 'error' %}no se pudo completar, así que se mantienen los datos anteriores{% elif estado.resultado == 'sin cambios' %}la carpeta no tenía cambios{% else %}se descargó una versión nueva{% endif %}</span></li>
         <li><span class="title">Próxima revisión</span><span class="meta">{{ proxima|fecha(true) }} (todos los domingos en la noche)</span></li>
         <li><span class="title">Contenido</span><span class="meta">{{ res.registros|pts }} filas: {{ res.deportistas|pts }} deportistas en {{ res.categorias }} categorías</span></li>
       </ul>
@@ -54,14 +78,14 @@
 </section>
 
 <section class="section">
-  <div class="section-head"><h2>Advertencias</h2></div>
+  <div class="section-head"><h2>Qué tener en cuenta</h2></div>
   <div class="card">
     <ul class="dlist">
-      <li><span class="title">La temporada está en curso</span><span class="meta">Quien aún no compite este año solo tiene su arrastre. Por eso la portada muestra también quién está "en racha".</span></li>
-      <li><span class="title">Nombres de clubes</span><span class="meta">Un mismo club aparece escrito de varias formas (por ejemplo "U CHILE" y "U DE CHILE"). El sitio unifica {{ res.variantes_club }} variantes.</span></li>
-      <li><span class="title">Deportistas sin club</span><span class="meta">{{ res.sin_club }} deportistas figuran con la sigla "NAC". Aparecen en los rankings individuales, pero no en la clasificación de clubes.</span></li>
-      <li><span class="title">Mismo nombre, misma persona</span><span class="meta">Las planillas no traen RUT; se considera la misma persona a quien tiene el mismo nombre completo y sexo.</span></li>
-      <li><span class="title">Comparar categorías</span><span class="meta">Las listas nacionales comparan puntajes de distintas categorías. Es una aproximación: una categoría con más torneos o más inscritos permite sumar más puntos.</span></li>
+      <li><span class="title">La temporada sigue en curso</span><span class="meta">Quien todavía no compite este año solo tiene los puntos que arrastra del año pasado. Por eso la portada también muestra quién va “en racha”.</span></li>
+      <li><span class="title">Nombres de clubes</span><span class="meta">En las planillas, un mismo club aparece escrito de varias formas (por ejemplo, “U CHILE” y “U DE CHILE”) y algunos cambiaron de nombre (Ozanam hoy se llama Chuseikan). El sitio unifica {{ res.variantes_club }} variantes.</span></li>
+      {% if res.sin_club %}<li><span class="title">Deportistas sin club</span><span class="meta">{{ res.sin_club }} {{ res.sin_club|pl('deportista figura', 'deportistas figuran') }} sin club. Aparecen en los rankings individuales, pero no en la clasificación de clubes.</span></li>{% endif %}
+      <li><span class="title">Mismo nombre, misma persona</span><span class="meta">Las planillas no traen RUT, así que tratamos como una misma persona a quienes tienen el mismo nombre completo y el mismo sexo.</span></li>
+      <li><span class="title">Comparar categorías</span><span class="meta">Las listas de la portada comparan puntajes de distintas categorías. Es una aproximación: en una categoría con más torneos o más inscritos se pueden sumar más puntos.</span></li>
       <li><span class="title">Lugares</span><span class="meta">El lugar se calcula ordenando por puntaje. Algunas planillas traen errores de numeración en la parte baja de la tabla.</span></li>
     </ul>
   </div>

@@ -1,55 +1,64 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui with context %}
-{% block title %}{{ cat.categoria }}{% endblock %}
+{% block title %}{{ cat.categoria }}{% if zona %} · Zona {{ zona_nombre }}{% endif %}{% endblock %}
 {% block subnav %}{{ ui.subnav_categorias(grupo_slug, por_sexo, cat.cat_slug) }}{% endblock %}
 
 {% block content %}
 <div class="page-head">
   <nav class="crumbs" aria-label="Ruta">
-    <a href="{{ url_for('vistas.categorias_inicio') }}">Categorías</a><span aria-hidden="true">/</span>
-    <a href="{{ url_for('vistas.grupo', grupo=grupo_slug) }}">{{ cat.grupo }}</a><span aria-hidden="true">/</span>
+    <a href="{{ url_for('vistas.categorias_inicio', zona=zona or None) }}">Categorías</a><span aria-hidden="true">/</span>
+    <a href="{{ url_for('vistas.grupo', grupo=grupo_slug, zona=zona or None) }}">{{ cat.grupo }}</a><span aria-hidden="true">/</span>
     <span>{{ cat.sexo_txt }} {{ cat.peso }}</span>
   </nav>
   <h1>{{ cat.grupo }} · {{ cat.sexo_txt }} · {{ cat.peso }}</h1>
+  {{ ui.aviso_zona() }}
 </div>
 
 <div class="stack">
   <div class="stats">
-    <div class="stat"><b>{{ cat.inscritos }}</b><span>{{ 'deportista' if cat.inscritos == 1 else 'deportistas' }} en el ranking</span></div>
-    <div class="stat"><b>{{ cat.activos }}</b><span>{{ 'sumó' if cat.activos == 1 else 'sumaron' }} puntos en torneos {{ rk.anio }}</span></div>
+    <div class="stat"><b>{{ cat.inscritos }}</b><span>{{ 'deportista' if cat.inscritos == 1 else 'deportistas' }} en el ranking{% if zona %} de la zona{% endif %}</span></div>
+    <div class="stat"><b>{{ cat.activos }}</b><span>{{ 'sumó' if cat.activos == 1 else 'sumaron' }} puntos en {{ rk.anio }}</span></div>
     <div class="stat"><b>{{ cat.ventaja|pct if cat.inscritos > 1 else '–' }}</b><span>ventaja del 1.º sobre el 2.º</span></div>
-    <div class="stat"><span>Nivel de competencia</span>{{ ui.tag(cat.competencia) }}</div>
+    {% if cat.competencia %}<div class="stat"><span>Nivel de competencia</span>{{ ui.tag(cat.competencia) }}</div>{% endif %}
   </div>
 
   {% if filas %}
   <div class="podium">
     {% for d in filas[:3] %}
-    <div class="card p{{ d.pos }}">
-      <span class="caption">{{ d.pos }}.º lugar</span>
+    {% set lugar = d.pos_zona if zona else d.pos %}
+    <div class="card p{{ lugar }}">
+      <span class="caption">{{ lugar }}.º lugar{% if zona %} en la zona · {{ d.pos }}.º en el país{% endif %}</span>
       <span class="who">{{ ui.dep(d.deportista, d.dep_slug) }}</span>
       <span class="caption">{{ ui.club(d.club_nombre, d.club_slug) }}</span>
       <span class="pts">{{ d.total|pts }} <small>pts</small></span>
-      <span class="caption">{{ d.n_torneos }} {{ "torneo" if d.n_torneos == 1 else "torneos" }} con puntos en {{ rk.anio }}{% if d.intl %} · {{ d.intl|pts }} pts internacionales{% endif %}</span>
+      <span class="caption">{{ d.n_torneos }} {{ 'torneo' if d.n_torneos == 1 else 'torneos' }} con puntos en {{ rk.anio }}{% if d.intl %} · {{ d.intl|pts }} pts internacionales{% endif %}</span>
     </div>
     {% endfor %}
   </div>
+  {% else %}
+  <div class="card empty">Ningún deportista de la Zona {{ zona_nombre }} aparece en esta categoría.</div>
   {% endif %}
 </div>
 
+{% if filas %}
 <section class="section">
   <div class="section-head">
     <h2>Ranking completo</h2>
-    <p>La barra muestra de dónde viene el puntaje de cada deportista: lo arrastrado del año pasado y lo ganado este año.</p>
+    <p>La barra muestra de dónde vienen los puntos de cada deportista: la mitad de lo que ganó el año pasado y lo que lleva ganado este año.
+      <a href="{{ url_for('vistas.por_clubes_categoria', grupo=grupo_slug, cat=cat.cat_slug, zona=zona or None) }}">Ver qué clubes suman más puntos en esta categoría</a>.</p>
   </div>
   {{ ui.leyenda_composicion() }}
   <div class="table-wrap">
     <table class="t">
-      <thead><tr><th class="rk">Lugar</th><th>Deportista</th><th>Club</th><th class="n">Total</th><th class="w-bar">Composición</th>
-        <th class="n">Arrastre</th><th class="n">Torneos {{ rk.anio }}</th><th class="n" title="Torneos {{ rk.anio }} con puntos">N.º torneos</th><th class="n">Internacional</th></tr></thead>
+      <thead><tr><th class="rk">{{ 'Zona' if zona else 'Lugar' }}</th>{% if zona %}<th class="n" title="Lugar en el ranking de todo el país">País</th>{% endif %}
+        <th>Deportista</th><th>Club</th><th class="n">Total</th><th class="w-bar">De dónde vienen los puntos</th>
+        <th class="n">Arrastre</th><th class="n">Ganados en {{ rk.anio }}</th><th class="n" title="Torneos de {{ rk.anio }} en que sumó puntos">Torneos</th><th class="n">Internacional</th></tr></thead>
       <tbody>
       {% for d in filas %}
-        <tr{% if d.pos <= 3 %} class="podio"{% endif %}>
-          <td class="rk">{{ ui.rank(d.pos) }}</td>
+        {% set lugar = d.pos_zona if zona else d.pos %}
+        <tr{% if lugar <= 3 %} class="podio"{% endif %}>
+          <td class="rk">{{ ui.rank(lugar) }}</td>
+          {% if zona %}<td class="n">{{ d.pos }}.º</td>{% endif %}
           <th scope="row">{{ ui.dep(d.deportista, d.dep_slug) }}</th>
           <td>{{ ui.club(d.club_nombre, d.club_slug) }}</td>
           <td class="n"><b>{{ d.total|pts }}</b></td>
@@ -64,4 +73,5 @@
     </table>
   </div>
 </section>
+{% endif %}
 {% endblock %}

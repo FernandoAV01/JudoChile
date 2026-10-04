@@ -7,20 +7,31 @@
   <nav class="crumbs" aria-label="Ruta"><a href="{{ url_for('vistas.clubes') }}">Clubes</a><span aria-hidden="true">/</span><span>{{ club.club_nombre }}</span></nav>
   <h1>{{ club.club_nombre }}</h1>
   {% if club.sin_club %}
-  <p class="lead">Deportistas registrados con la sigla "NAC", que no identifica a un club concreto. No participan de la clasificación de clubes.</p>
+  <p class="lead">Deportistas que figuran sin club en las planillas. No participan de la clasificación de clubes.</p>
   {% else %}
-  <p class="lead">Puesto <b>{{ club.lugar }}</b> de {{ n_clubes }} clubes en puntos totales.</p>
+  <p class="lead">Puesto <b>{{ club.lugar }}</b> de {{ n_clubes }} en puntos totales en todo el país{% if puesto_zona %} y <b>{{ puesto_zona }}</b> de {{ n_zona }} en la <a href="{{ url_for('vistas.clubes', zona=club.zona) }}">Zona {{ club.zona_nombre }}</a>{% endif %}.</p>
+  <dl class="ficha">
+    <div><dt>Ciudad</dt><dd>{{ club.ciudad or 'Sin confirmar' }}{% if club.comuna and club.comuna != club.ciudad %} <span class="muted">(comuna de {{ club.comuna }})</span>{% endif %}</dd></div>
+    <div><dt>Región</dt><dd>{{ ui.region(club.region) }}</dd></div>
+    <div><dt>Zona</dt><dd>{% if club.zona %}<a href="{{ url_for('vistas.clubes', zona=club.zona) }}">{{ club.zona_nombre }}</a>{% else %}Sin confirmar{% endif %}</dd></div>
+  </dl>
+  {% if club.fuente %}
+  <p class="caption">Ubicación según el <a href="{{ club.fuente }}" target="_blank" rel="noopener">registro de clubes de la Federación de Judo de Chile</a>{% if club.nombre_registro %}, donde el club figura como “{{ club.nombre_registro }}”{% endif %}.</p>
+  {% else %}
+  <p class="caption">Todavía no pudimos confirmar dónde entrena este club: no aparece en el registro de clubes de la federación.</p>
+  {% endif %}
+  {% if club.variantes %}<p class="caption">En las planillas de la federación también aparece como {% for v in club.variantes %}“{{ v }}”{{ ', ' if loop.revindex > 2 else (' y ' if loop.revindex == 2 else '') }}{% endfor %}.</p>{% endif %}
   {% endif %}
 </div>
 
 <div class="stack">
   <div class="stats">
     <div class="stat"><b>{{ club.puntos|pts }}</b><span>puntos totales</span></div>
-    <div class="stat"><b>{{ club.oro }}</b><span>categorías que lidera (1.º)</span></div>
-    <div class="stat"><b>{{ club.plata }}</b><span>segundos lugares</span></div>
-    <div class="stat"><b>{{ club.bronce }}</b><span>terceros lugares</span></div>
-    <div class="stat"><b>{{ club.top8 }}</b><span>deportistas en el top 8</span></div>
-    <div class="stat"><b>{{ club.deportistas }}</b><span>deportistas en el ranking</span></div>
+    <div class="stat"><b>{{ club.oro }}</b><span>{{ club.oro|pl('categoría que lidera', 'categorías que lidera') }}</span></div>
+    <div class="stat"><b>{{ club.plata }}</b><span>{{ club.plata|pl('segundo lugar', 'segundos lugares') }}</span></div>
+    <div class="stat"><b>{{ club.bronce }}</b><span>{{ club.bronce|pl('tercer lugar', 'terceros lugares') }}</span></div>
+    <div class="stat"><b>{{ club.top8 }}</b><span>{{ club.top8|pl('deportista', 'deportistas') }} en el top 8</span></div>
+    <div class="stat"><b>{{ club.deportistas }}</b><span>{{ club.deportistas|pl('deportista', 'deportistas') }} en el ranking</span></div>
   </div>
 
   <div class="grid-2">

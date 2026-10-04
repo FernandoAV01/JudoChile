@@ -1,19 +1,25 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui with context %}
-{% block title %}Clubes{% endblock %}
+{% block title %}Clubes{% if zona %} · Zona {{ zona_nombre }}{% endif %}{% endblock %}
+{% block subnav %}{{ ui.subnav_zona() }}{% endblock %}
 
 {% block content %}
 <div class="page-head">
-  <h1>Los {{ clubes|length }} clubes del ranking</h1>
-  <p class="lead">Ordenados por puntos totales: la suma del puntaje de ranking de todos sus deportistas, en todas las edades y pesos. Elige un club para ver su ficha.</p>
+  <h1>{% if zona %}Clubes de la Zona {{ zona_nombre }}{% else %}Los {{ clubes|length }} clubes del ranking{% endif %}</h1>
+  <p class="lead">Ordenados por puntos totales: la suma de los puntos de ranking de todos sus deportistas, en todas las edades y pesos. Haz clic en un club para ver su ciudad y a todos sus deportistas.</p>
+  {{ ui.aviso_zona('clubes') }}
 </div>
 <div class="stack">
   <div class="filter">
-    <label class="sr-only" for="filtro-clubes">Filtrar clubes por nombre</label>
-    <input class="field" id="filtro-clubes" type="search" placeholder="Filtrar por nombre de club…" autocomplete="off" data-filtra="#tabla-clubes">
+    <label class="sr-only" for="filtro-clubes">Buscar un club en la tabla</label>
+    <input class="field" id="filtro-clubes" type="search" placeholder="Buscar un club en la tabla…" autocomplete="off" data-filtra="#tabla-clubes">
     <span class="caption" id="filtro-info" aria-live="polite"></span>
   </div>
-  {{ ui.tabla_clubes(clubes, clubes[0].puntos if clubes else 1) }}
-  <p class="caption">Un club con muchos deportistas suma más puntos. Las columnas 1.º, 2.º y 3.º muestran en cuántas categorías tiene a esos lugares del ranking.</p>
+  {% if clubes %}
+  {{ ui.tabla_clubes(clubes, clubes[0].puntos, con_nacional=zona) }}
+  {% else %}
+  <div class="card empty">No hay clubes de la Zona {{ zona_nombre }} en el ranking.</div>
+  {% endif %}
+  <p class="caption">Un club con muchos deportistas suma más puntos. Las columnas 1.º, 2.º y 3.º cuentan en cuántas categorías el club tiene a esos lugares del ranking nacional.{% if zona %} "Nacional" es el puesto del club en todo el país.{% endif %}</p>
 </div>
 {% endblock %}

@@ -25,14 +25,17 @@
 <section class="section">
   <div class="section-head">
     <h2>Los clubes más fuertes del país</h2>
-    <p>Ordenados por puntos totales: la suma del puntaje de ranking de todos sus deportistas. Las columnas 1.º, 2.º y 3.º cuentan en cuántas categorías el club tiene a esos lugares; "Top 8", cuántos de sus deportistas están entre los ocho mejores de su categoría.</p>
+    <p>Ordenados por puntos totales, es decir, la suma de los puntos de ranking de todos sus deportistas. Las columnas 1.º, 2.º y 3.º indican en cuántas categorías el club tiene a quien va en ese lugar, y "Top 8", cuántos de sus deportistas están entre los ocho primeros de su categoría.</p>
   </div>
   {{ ui.tabla_clubes(clubes, clubes[0].puntos) }}
-  <a class="more" href="{{ url_for('vistas.clubes') }}">Ver los {{ res.clubes }} clubes</a>
+  <div class="links">
+    <a class="more" href="{{ url_for('vistas.clubes') }}">Ver los {{ res.clubes }} clubes, con su región</a>
+    <a class="more" href="{{ url_for('vistas.por_clubes_inicio') }}">Ver qué clubes suman más en cada categoría</a>
+  </div>
   <div class="grid-2">
     <div class="card">
       <div class="card-head"><h3>Dónde gana cada club</h3>
-        <p class="caption">Podios (1.º a 3.º) de los {{ mapa.filas|length }} mejores clubes en cada edad. Más oscuro, más podios.</p></div>
+        <p class="caption">Podios (1.º a 3.º) de los {{ mapa.filas|length }} clubes con más puntos, en cada edad. Más oscuro, más podios.</p></div>
       <div class="table-wrap">
         <table class="t heat">
           <thead><tr><th>Club</th>{% for etiqueta, _, gslug in mapa.grupos %}<th><a class="plain" href="{{ url_for('vistas.grupo', grupo=gslug) }}">{{ etiqueta }}</a></th>{% endfor %}</tr></thead>
@@ -41,7 +44,7 @@
             <tr><th scope="row">{{ ui.club(f.club, f.slug) }}</th>
             {% for v in f.valores %}
               {% set lvl = 0 if v == 0 else 1 + ((v - 1) * 5 // ([mapa.max - 1, 1]|max)) %}
-              <td class="h h{{ lvl }}" title="{{ f.club }} · {{ mapa.grupos[loop.index0][0] }}: {{ v }} podios">{{ v if v else '·' }}</td>
+              <td class="h h{{ lvl }}" title="{{ f.club }} · {{ mapa.grupos[loop.index0][0] }}: {{ v }} {{ v|pl('podio', 'podios') }}">{{ v if v else '·' }}</td>
             {% endfor %}</tr>
           {% endfor %}
           </tbody>
@@ -53,7 +56,7 @@
         <p class="caption">Los tres clubes con más puntos en cada grupo de edad.</p></div>
       <ul class="dlist">
         {% for g in mejores %}
-        <li><span class="title"><a class="plain" href="{{ url_for('vistas.grupo', grupo=g.slug) }}">{{ g.grupo }}</a></span>
+        <li><span class="title"><a class="plain" href="{{ url_for('vistas.por_clubes_grupo', grupo=g.slug) }}">{{ g.grupo }}</a></span>
           {% for c in g.clubes %}
           <span class="meta">{{ loop.index }}. {{ ui.club(c.club_nombre, c.club_slug) }} <span class="note">· {{ c.puntos|pts }} pts · {{ c.oro }} {{ "primer lugar" if c.oro == 1 else "primeros lugares" }}</span></span>
           {% endfor %}
@@ -100,7 +103,7 @@
     <p>Comparamos al 1.º con el 2.º de cada categoría. Una ventaja grande indica un líder claro; una ventaja chica, una categoría abierta.</p>
   </div>
   <div class="grid-2">
-    {% for clave, titulo, nota in [('dominadas', 'Líderes con más ventaja', 'El 1.º supera al 2.º por más puntos.'),
+    {% for clave, titulo, nota in [('dominadas', 'Líderes con más ventaja', 'Donde el 1.º le saca más ventaja al 2.º.'),
                                   ('renidas', 'Categorías más reñidas', 'El 1.º y el 2.º están casi empatados.')] %}
     <div class="card">
       <div class="card-head"><h3>{{ titulo }}</h3><p class="caption">{{ nota }}</p></div>
@@ -125,7 +128,7 @@
   <div class="grid-2">
     <div class="card">
       <div class="card-head"><h3>En el podio de dos edades</h3>
-        <p class="caption">{{ multi|length }} deportistas están entre los tres primeros de dos grupos de edad a la vez, por ejemplo Sub 21 y Absoluta.</p></div>
+        <p class="caption">{{ multi|length }} {{ multi|length|pl('deportista está', 'deportistas están') }} entre los tres primeros de dos grupos de edad a la vez, por ejemplo Sub 21 y Absoluta.</p></div>
       <ul class="dlist">
         {% for m in multi[:8] %}
         <li>

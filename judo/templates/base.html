@@ -28,7 +28,8 @@
     </a>
     <nav class="mainnav" aria-label="Secciones">
       {% for clave, texto, destino in [('resumen', 'Resumen', 'vistas.resumen'), ('categorias', 'Categorías', 'vistas.categorias_inicio'),
-                                       ('clubes', 'Clubes', 'vistas.clubes'), ('metodologia', 'Cómo funciona', 'vistas.metodologia')] %}
+                                       ('clubes', 'Clubes', 'vistas.clubes'), ('por-clubes', 'Categorías por clubes', 'vistas.por_clubes_inicio'),
+                                       ('metodologia', 'Cómo funciona', 'vistas.metodologia')] %}
       <a href="{{ url_for(destino) }}"{% if seccion == clave %} aria-current="page"{% endif %}>{{ texto }}</a>
       {% endfor %}
     </nav>
@@ -43,11 +44,24 @@
 <main class="wrap">
 {% block content %}{% endblock %}
 </main>
-<footer class="wrap footer">
-  {% if estado.fecha_planillas %}<span>Planillas de la federación publicadas el <b>{{ estado.fecha_planillas|fecha }}</b></span>{% endif %}
-  {% if estado.ultima_revision %}<span>Última revisión de la carpeta: {{ estado.ultima_revision|fecha(true) }}</span>{% endif %}
-  {% if proxima %}<span>Próxima revisión: {{ proxima|fecha(true) }}</span>{% endif %}
-  <span><a href="{{ url_for('vistas.metodologia') }}">Cómo se calcula</a></span>
+<footer class="footer">
+  <div class="wrap footer-grid">
+    <section class="footer-autor" aria-label="Autoría y contacto">
+      <p class="footer-titulo">Sitio creado por <b>Fernando Arellano</b></p>
+      <p>Proyecto independiente de análisis de datos. No es un sitio oficial de la Federación de Judo de Chile.</p>
+      <ul class="footer-links">
+        <li><a href="https://github.com/FernandoAV01" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="https://www.linkedin.com/in/fernando-arellano-v" target="_blank" rel="noopener">LinkedIn</a></li>
+      </ul>
+      <p>Para cualquier consulta o contacto, escribe a <a href="mailto:arellano.fernando.v@gmail.com">arellano.fernando.v@gmail.com</a>.</p>
+    </section>
+    <section class="footer-datos" aria-label="Actualización de los datos">
+      <p class="footer-titulo">Datos</p>
+      {% if estado.fecha_planillas %}<p>Planillas oficiales publicadas por la federación el {{ estado.fecha_planillas|fecha }}.</p>{% endif %}
+      {% if estado.ultima_revision %}<p>Última revisión: {{ estado.ultima_revision|fecha(true) }}{% if proxima %} · próxima: {{ proxima|fecha(true) }}{% endif %}.</p>{% endif %}
+      <p><a href="{{ url_for('vistas.metodologia') }}">Cómo se calcula el ranking</a></p>
+    </section>
+  </div>
 </footer>
 <script src="{{ url_for('static', filename='app.js') }}" defer></script>
 </body>

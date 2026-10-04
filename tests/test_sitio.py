@@ -49,7 +49,7 @@ def client(app):
     ("/categorias/sub-13/mujeres-mas63", "+63 kg"),
     ("/clubes", "Hiroshima"),
     ("/clubes/hiroshima", "Sus números 1"),
-    ("/clubes/sin-club", "NAC"),
+    ("/clubes/nac", "Arica"),
     ("/deportistas/maria-camila-valencia-f", "Sus categorías"),
     ("/buscar?q=valencia", "Deportistas"),
     ("/buscar?q=zzzzqq", "No encontramos"),
@@ -115,3 +115,75 @@ def test_puntajes_cuadran(app):
     assert r.anio == 2026 and len(r.cats) == 80
     assert ((df.arrastre + df.torneos - df.total).abs() < 0.05).all()
     assert (df.groupby("cat_id").pos.min() == 1).all()
+
+
+# ---------------------------------------------------------------- zonas, ubicación y clubes por categoría
+@pytest.mark.parametrize("ruta", ["/", "/clubes", "/categorias/sub-15", "/categorias-por-clubes/absoluta", "/metodologia",
+                                  "/clubes/no-existe"])
+def test_pie_con_autoria(client, ruta):
+    html = client.get(ruta).get_data(as_text=True)
+    for texto in ("Fernando Arellano", "https://github.com/FernandoAV01",
+                  "https://www.linkedin.com/in/fernando-arellano-v", "arellano.fernando.v@gmail.com"):
+        assert texto in html, (ruta, texto)
+
+
+def test_ficha_de_club_con_ubicacion(client):
+    html = client.get("/clubes/hiroshima").get_data(as_text=True)
+    assert "Iquique" in html and "Tarapacá" in html and "Norte" in html
+    html = client.get("/clubes/nac").get_data(as_text=True)
+    assert "North American College" in html and "Arica" in html
+
+
+def test_club_sin_ubicacion_confirmada(client):
+    assert "Sin confirmar" in client.get("/clubes/shijoukou").get_data(as_text=True)
+
+
+def test_clubes_por_zona(app, client):
+    r = app.extensions["almacen"].ranking()
+    for zona in ("norte", "centro", "sur"):
+        clubes = r.lista_clubes(zona)
+        assert clubes and all(c["zona"] == zona for c in clubes)
+        assert [c["puesto"] for c in clubes] == list(range(1, len(clubes) + 1))
+    html = client.get("/clubes?zona=norte").get_data(as_text=True)
+    assert ">Hiroshima</a>" in html and ">Pudahuel</a>" not in html and "Nacional" in html
+
+
+def test_zona_invalida_se_ignora(client):
+    assert client.get("/clubes?zona=marte").get_data(as_text=True) == client.get("/clubes").get_data(as_text=True)
+
+
+def test_categoria_filtrada_por_zona(app):
+    r = app.extensions["almacen"].ranking()
+    info, filas = r.categoria("absoluta", "hombres-81", "sur")
+    assert filas and all(f["zona"] == "sur" for f in filas)
+    assert [f["pos_zona"] for f in filas] == list(range(1, len(filas) + 1))
+    assert info["inscritos"] == len(filas) and info["lider"] == filas[0]["deportista"]
+
+
+def test_clubes_por_categoria(app, client):
+    r = app.extensions["almacen"].ranking()
+    df = r.df[r.df.con_club]
+    for grupo, cat in (("absoluta", "hombres-81"), ("sub-13", ""), ("sub-18", "mujeres-40")):
+        clubes = r.clubes_en(grupo, cat)
+        sub = df[(df.grupo_slug == grupo) & ((df.cat_slug == cat) if cat else True)]
+        assert abs(sum(c["puntos"] for c in clubes) - sub.total.sum()) < 0.01
+        assert [c["puntos"] for c in clubes] == sorted((c["puntos"] for c in clubes), reverse=True)
+    assert client.get("/categorias-por-clubes").headers["Location"].endswith("/categorias-por-clubes/absoluta")
+    assert client.get("/categorias-por-clubes/absoluta/hombres-999").status_code == 404
+    html = client.get("/categorias-por-clubes/sub-15?zona=centro").get_data(as_text=True)
+    assert "Clubes en Sub 15 · Zona Centro" in html
+
+
+def test_navegacion_conserva_la_zona(client):
+    html = client.get("/categorias/sub-15?zona=sur").get_data(as_text=True)
+    assert "/categorias/sub-15/mujeres-52?zona=sur" in html and "/categorias/absoluta?zona=sur" in html
+
+
+def test_categoria_sin_deportistas_de_la_zona(client):
+    # Sub 18 · Mujeres · −40 kg tiene una sola deportista, de un club de Iquique (Zona Norte).
+    html = client.get("/categorias/sub-18/mujeres-40?zona=sur").get_data(as_text=True)
+    assert "Ningún deportista de la Zona Sur" in html and "Ranking completo" not in html
+    html = client.get("/categorias/sub-18?zona=sur").get_data(as_text=True)
+    assert "Ningún deportista de la Zona Sur en esta categoría" in html
+    html = client.get("/categorias-por-clubes/sub-18/mujeres-40?zona=sur").get_data(as_text=True)
+    assert "Ningún club de la Zona Sur" in html
