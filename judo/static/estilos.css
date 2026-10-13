@@ -2,20 +2,37 @@
    Judo Chile · sistema de diseño
    Una escala de espacio, una de tipo y un juego de componentes reutilizados
    en todas las páginas. Los colores salen siempre de estos tokens.
+
+   Orden del archivo: fuentes · tokens (colores, tipos, espacios) · tema oscuro · base ·
+   cabecera y menús · estructura de página · tarjetas y cifras · tablas · barras ·
+   listas y gráficos · categorías, podio y metodología · formularios · pie ·
+   pantallas angostas · impresión.
    ========================================================================== */
+
+/* Fuentes servidas por el propio sitio (licencia SIL OFL 1.1, en static/fuentes/).
+   La de títulos es angosta: si llegara después de dibujar la página, al cambiar movería todo lo de abajo,
+   así que solo se usa si ya está lista (optional; se precarga y desde la segunda página viene del caché).
+   La del texto usa swap: se ve de inmediato con la fuente del sistema y luego cambia a la del sitio. */
+@font-face { font-family: "Barlow Condensed"; font-style: normal; font-weight: 700; font-display: optional;
+  src: url("fuentes/barlow-condensed-700.woff2") format("woff2"); }
+@font-face { font-family: "Source Sans 3"; font-style: normal; font-weight: 400 700; font-display: swap;
+  src: url("fuentes/source-sans-3.woff2") format("woff2"); }
+
 :root {
   --paper: #f3f4f7; --surface: #ffffff; --surface-2: #f6f7fa; --sunken: #e8ecf2;
-  --ink: #0f1728; --ink-2: #475167; --muted: #687286; --line: #dfe3ea; --line-strong: #c8cfdb;
+  --ink: #0f1728; --ink-2: #475167; --muted: #5f687a; --line: #dfe3ea; --line-strong: #c8cfdb;
   --navy: #0f1f3d; --navy-2: #182c54; --on-navy: #f2f5fb; --on-navy-2: #aab7d3; --navy-line: rgba(255,255,255,.12);
   --accent: #1f56b8; --accent-strong: #173f8a; --accent-soft: #e8effb; --on-accent: #ffffff;
   --red: #d62839; --hero-em: #a9cbf3;
   --gold: #c99a0b; --silver: #8e99aa; --bronze: #b06a3b; --on-medal: #14100a;
+  /* Medallas como texto: más oscuras para llegar a 4,5:1 sobre fondo claro */
+  --gold-ink: #8a6a00; --silver-ink: #626d7d; --bronze-ink: #995228;
   --s1: #2a78d6; --s1-soft: #a9cbf3; --s2: #eb6834; --s3: #1baf7a;
   --tag-renida: #a8212c; --tag-renida-bg: #fbe7e8;
   --tag-disputada: #855800; --tag-disputada-bg: #fcf0d4;
   --tag-dominada: #1f56b8; --tag-dominada-bg: #e8effb;
   --h1: #e3edfb; --h1-ink: #0d2346; --h2: #c3daf8; --h2-ink: #0d2346; --h3: #8fbcf0; --h3-ink: #0d2346;
-  --h4: #4b92e6; --h4-ink: #ffffff; --h5: #2565c2; --h5-ink: #ffffff; --h6: #123f80; --h6-ink: #ffffff;
+  --h4: #4b92e6; --h4-ink: #08142a; --h5: #2565c2; --h5-ink: #ffffff; --h6: #123f80; --h6-ink: #ffffff;
 
   --display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
   --body: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -24,7 +41,7 @@
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 64px;
   --radius: 10px; --radius-sm: 6px; --max: 1160px;
 }
-@media (prefers-color-scheme: dark) {
+@media screen and (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
     --paper: #0b1019; --surface: #121a27; --surface-2: #172131; --sunken: #1f2a3c;
@@ -33,6 +50,7 @@
     --accent: #7ea8f0; --accent-strong: #a8c4f6; --accent-soft: #1a2a47; --on-accent: #0b1019;
     --red: #f0606c; --hero-em: #8fb6f2;
     --gold: #e0b22a; --silver: #a6b0bf; --bronze: #cf8452;
+    --gold-ink: #e0b22a; --silver-ink: #a6b0bf; --bronze-ink: #cf8452;
     --s1: #3987e5; --s1-soft: #1f4f8f; --s2: #e06a33; --s3: #1fb27d;
     --tag-renida: #f4a1a8; --tag-renida-bg: #3b1d24;
     --tag-disputada: #f0c766; --tag-disputada-bg: #36290f;
@@ -49,6 +67,7 @@
   --accent: #7ea8f0; --accent-strong: #a8c4f6; --accent-soft: #1a2a47; --on-accent: #0b1019;
   --red: #f0606c; --hero-em: #8fb6f2;
   --gold: #e0b22a; --silver: #a6b0bf; --bronze: #cf8452;
+  --gold-ink: #e0b22a; --silver-ink: #a6b0bf; --bronze-ink: #cf8452;
   --s1: #3987e5; --s1-soft: #1f4f8f; --s2: #e06a33; --s3: #1fb27d;
   --tag-renida: #f4a1a8; --tag-renida-bg: #3b1d24;
   --tag-disputada: #f0c766; --tag-disputada-bg: #36290f;
@@ -66,33 +85,43 @@ p { margin: 0; max-width: 68ch; }
 a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
 a:hover { color: var(--accent-strong); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+.masthead :focus-visible, .hero :focus-visible { outline-color: var(--on-navy); }
 img { max-width: 100%; }
 .wrap { max-width: var(--max); margin-inline: auto; padding-inline: 20px; }
-.num, td.n, th.n { font-variant-numeric: tabular-nums; text-align: right; }
+td.n, th.n { font-variant-numeric: tabular-nums; text-align: right; }  /* columnas de números */
 .muted { color: var(--muted); }
+.nw { white-space: nowrap; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* Enlace para saltar al contenido: invisible hasta recibir el foco del teclado */
+.saltar { position: absolute; left: var(--sp-4); top: -100px; z-index: 20; padding: var(--sp-2) var(--sp-4); border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--accent); font-weight: 700; text-decoration: none; }
+.saltar:focus { top: var(--sp-3); }
 @media (prefers-reduced-motion: no-preference) { a, button, .pill, .card-link { transition: color .15s, background-color .15s, border-color .15s; } }
 
 /* Enlaces a deportistas y clubes: texto normal que se subraya al pasar */
-.plain { color: inherit; text-decoration: none; }
-.plain:hover { color: var(--accent); text-decoration: underline; }
+/* Nombres que son enlaces: subrayado tenue para que se note que se pueden tocar, también en celular */
+.plain { color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, currentColor 30%, transparent); }
+.plain:hover { color: var(--accent); text-decoration-color: currentColor; }
 
 /* ---------- Cabecera ---------- */
 .obi { height: 4px; background: linear-gradient(90deg, var(--s1) 0 70%, var(--red) 70% 100%); }
 .masthead { background: var(--navy); color: var(--on-navy); }
-.masthead-row { display: flex; align-items: center; gap: var(--sp-3) var(--sp-6); min-height: 60px; flex-wrap: wrap; padding-block: var(--sp-2); }
-.brand { display: flex; align-items: center; gap: var(--sp-3); color: var(--on-navy); text-decoration: none; }
+/* En escritorio todo va en una fila, aunque las fuentes aún no carguen: si el buscador bajara a otra
+   línea, al llegar las fuentes saltaría de vuelta arriba y movería toda la página. */
+.masthead-row { display: flex; align-items: center; gap: var(--sp-3) var(--sp-5); min-height: 60px; flex-wrap: nowrap; padding-block: var(--sp-2); }
+.brand { flex: none; display: flex; align-items: center; gap: var(--sp-3); color: var(--on-navy); text-decoration: none; }
 .brand:hover { color: var(--on-navy); }
 .brand-mark { flex: none; }
 .brand-txt { display: grid; line-height: 1; }
 .brand-txt b { font: 700 var(--t-lg)/1 var(--display); letter-spacing: .01em; }
 .brand-txt small { font: 600 var(--t-xs)/1.2 var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--on-navy-2); }
 .mainnav { display: flex; gap: var(--sp-1); margin-right: auto; overflow-x: auto; scrollbar-width: none; }
-.mainnav a { color: var(--on-navy-2); text-decoration: none; font-weight: 600; padding: 18px var(--sp-3) 15px; border-bottom: 3px solid transparent; white-space: nowrap; }
+.mainnav a { color: var(--on-navy-2); text-decoration: none; font-weight: 600; padding: 18px var(--sp-2) 15px; border-bottom: 3px solid transparent; white-space: nowrap; }
 .mainnav a:hover { color: var(--on-navy); }
 .mainnav a[aria-current="page"] { color: var(--on-navy); border-bottom-color: var(--red); }
 .search { display: flex; }
-.search input { width: 220px; font: inherit; font-size: var(--t-sm); padding: 8px 12px; border-radius: var(--radius-sm);
+.search input { width: 200px; font: inherit; font-size: var(--t-sm); padding: 8px 12px; border-radius: var(--radius-sm);
   border: 1px solid var(--navy-line); background: var(--navy-2); color: var(--on-navy); }
 .search input::placeholder { color: var(--on-navy-2); }
 
@@ -110,13 +139,22 @@ img { max-width: 100%; }
 .pill[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 /* Edad elegida mientras se mira uno de sus pesos */
 .pill[aria-current="true"] { border-color: var(--accent); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+/* Filas deslizables (menú en celular y botones): el borde se difumina hacia el lado donde quedan más opciones.
+   Las clases las pone app.js; en las filas de botones la etiqueta fija ya marca el lado izquierdo. */
+.desliza-der { -webkit-mask-image: linear-gradient(to left, transparent, #000 40px); mask-image: linear-gradient(to left, transparent, #000 40px); }
+.mainnav.desliza-izq { -webkit-mask-image: linear-gradient(to right, transparent, #000 40px); mask-image: linear-gradient(to right, transparent, #000 40px); }
+.mainnav.desliza-izq.desliza-der {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 40px calc(100% - 40px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 40px calc(100% - 40px), transparent); }
 
 /* ---------- Estructura de página ---------- */
-main.wrap { padding-bottom: var(--sp-8); }
+.principal { padding-bottom: var(--sp-8); }
+#contenido:focus { outline: none; }
 .page-head { display: grid; gap: var(--sp-2); padding-block: var(--sp-6) var(--sp-2); }
 .page-head h1 { font-size: var(--t-2xl); }
 .crumbs { display: flex; flex-wrap: wrap; gap: var(--sp-2); font-size: var(--t-sm); color: var(--muted); }
-.crumbs a { color: var(--muted); }
+.crumbs a { color: var(--muted); padding-block: 3px; }
+.plain { padding-block: 2px; }
 .lead { font-size: var(--t-md); color: var(--ink-2); }
 .eyebrow { font: 700 var(--t-xs)/1.2 var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--red); }
 .section { display: grid; gap: var(--sp-4); margin-top: var(--sp-7); }
@@ -142,7 +180,7 @@ main.wrap { padding-bottom: var(--sp-8); }
 /* ---------- Tarjetas ---------- */
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: var(--sp-5); display: grid; gap: var(--sp-4); align-content: start; min-width: 0; }
 .card-head { display: grid; gap: var(--sp-1); }
-.card-head h3 { font-size: var(--t-lg); }
+.card-head h2, .card-head h3 { font-size: var(--t-lg); }
 .caption { font-size: var(--t-sm); color: var(--muted); }
 a.card-link { color: inherit; text-decoration: none; }
 a.card-link:hover { border-color: var(--accent); color: inherit; }
@@ -160,13 +198,26 @@ a.card-link:hover { border-color: var(--accent); color: inherit; }
 .hero .stat span { color: var(--on-navy-2); }
 
 /* ---------- Tablas ---------- */
-.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+/* position: relative mantiene dentro del recorte al texto oculto (.sr-only) de los encabezados;
+   sin esto Chromium agranda el ancho de toda la página en celulares. */
+.table-wrap { position: relative; overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius);
+  /* Sombras suaves a los costados cuando la tabla sigue más allá del borde (se mueven con el desplazamiento) */
+  background:
+    linear-gradient(to right, var(--surface) 30%, transparent) left center / 40px 100% no-repeat local,
+    linear-gradient(to left, var(--surface) 30%, transparent) right center / 40px 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, color-mix(in srgb, var(--ink) 16%, transparent), transparent) left center / 14px 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, color-mix(in srgb, var(--ink) 16%, transparent), transparent) right center / 14px 100% no-repeat scroll,
+    var(--surface); }
+.t td.vacio { text-align: center; color: var(--muted); padding-block: var(--sp-5); white-space: normal; }
 .card .table-wrap { border-radius: var(--radius-sm); }
 .t tr[hidden] { display: none; }
 table.t { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
-.t th, .t td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: middle; }
+.t th, .t td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: middle; }
 .t thead th { font: 700 var(--t-xs)/1.2 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); }
 .t tbody th { font-weight: 600; }
+/* La columna del nombre queda fija al deslizar la tabla hacia el lado (útil en celular) */
+.t th[scope="row"], .t th.col-fija { position: sticky; left: 0; z-index: 1; background: var(--surface); box-shadow: inset -1px 0 0 var(--line); }
+.t thead th.col-fija { background: var(--surface-2); z-index: 2; }
 .t tbody tr:last-child > * { border-bottom: 0; }
 .t tbody tr:hover > * { background: var(--surface-2); }
 .t tr.podio > * { background: color-mix(in srgb, var(--accent-soft) 60%, var(--surface)); }
@@ -175,10 +226,10 @@ table.t { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
 .t .n { text-align: right; }
 .t .rk { width: 1%; padding-right: 4px; }
 .t td.rk .muted { margin-left: 6px; font-size: var(--t-xs); }
-.t .w-bar { width: 32%; min-width: 150px; }
+.t .w-bar { width: 24%; min-width: 120px; }
 .t thead th.w-bar { white-space: normal; }
 .t td.g, .t td.s, .t td.b { font-weight: 700; }
-.t td.g { color: var(--gold); } .t td.s { color: var(--silver); } .t td.b { color: var(--bronze); }
+.t td.g { color: var(--gold-ink); } .t td.s { color: var(--silver-ink); } .t td.b { color: var(--bronze-ink); }
 .t .sub { display: block; font-weight: 400; font-size: var(--t-xs); color: var(--muted); }
 
 /* Lugar en el ranking (medallas para 1.º a 3.º) */
@@ -205,6 +256,7 @@ table.t { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
 .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
 .sw-s1 { background: var(--s1); } .sw-s1-soft { background: var(--s1-soft); } .sw-s2 { background: var(--s2); }
 
+/* ---------- Listas y gráficos ---------- */
 /* Lista ordenada con barra (figuras) */
 .rlist { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-3); }
 .rlist li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; grid-template-areas: "n t v" "n b b"; gap: 4px var(--sp-3); align-items: center; }
@@ -229,20 +281,37 @@ table.t { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
 /* Barras horizontales por grupo de edad (dos series) */
 .hbars { display: grid; gap: var(--sp-4); }
 .hbars .row { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: var(--sp-3); align-items: center; }
-.hbars .lbl { font: 700 var(--t-md)/1 var(--display); color: inherit; }
+.hbars .lbl { font: 700 var(--t-md)/1 var(--display); color: inherit; min-height: 24px; display: flex; align-items: center; }
 .hbars .pair { display: grid; grid-template-columns: minmax(0, 1fr) 36px; gap: 4px var(--sp-2); align-items: center; }
 .hbars .pair i { display: block; height: 12px; border-radius: 0 4px 4px 0; min-width: 2px; }
 .hbars .pair span { font-size: var(--t-xs); color: var(--ink-2); font-variant-numeric: tabular-nums; }
 
+/* Chile de norte a sur: una fila por región, agrupadas por zona */
+.geo { display: grid; gap: var(--sp-2); }
+.geo-zona { max-width: none; font: 700 var(--t-xs)/1.2 var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+  padding-bottom: var(--sp-1); border-bottom: 1px solid var(--line); margin-top: var(--sp-3); }
+.geo-zona:first-child { margin-top: 0; }
+.geo-zona a { color: inherit; }
+.geo-fila { display: grid; grid-template-columns: minmax(0, 190px) minmax(0, 1fr) 88px; gap: var(--sp-1) var(--sp-4); align-items: center; }
+.geo-fila .nombre { display: grid; min-width: 0; font-weight: 600; }
+.geo-fila .nombre small { font-weight: 400; font-size: var(--t-xs); color: var(--muted); }
+.geo-fila .v { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) {
+  .geo-fila { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "n v" "b b"; }
+  .geo-fila .nombre { grid-area: n; } .geo-fila .v { grid-area: v; } .geo-fila .bar { grid-area: b; }
+}
+
 /* Mapa de calor */
-.heat td.h { text-align: center; font-weight: 700; min-width: 70px; border-left: 2px solid var(--surface); font-variant-numeric: tabular-nums; }
+.heat td.h { text-align: center; font-weight: 700; min-width: 52px; border-left: 2px solid var(--surface); font-variant-numeric: tabular-nums; }
 .heat td.h0 { color: var(--muted); font-weight: 400; }
+.heat tbody th { white-space: normal; min-width: 110px; }  /* nombres largos en dos líneas para que el mapa quepa en su tarjeta */
 .heat thead th:not(:first-child) { text-align: center; }
 .h1 { background: var(--h1); color: var(--h1-ink); } .h2 { background: var(--h2); color: var(--h2-ink); }
 .h3 { background: var(--h3); color: var(--h3-ink); } .h4 { background: var(--h4); color: var(--h4-ink); }
 .h5 { background: var(--h5); color: var(--h5-ink); } .h6 { background: var(--h6); color: var(--h6-ink); }
 .t tbody tr:hover > td.h { filter: brightness(.97); }
 
+/* ---------- Categorías, podio y metodología ---------- */
 /* Tarjetas de categoría (grilla de pesos) */
 .cat-grid { display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); }
 .cat-card { gap: var(--sp-2); padding: var(--sp-4) var(--sp-5); }
@@ -256,7 +325,7 @@ table.t { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
 .podium .card { gap: var(--sp-1); border-top-width: 4px; }
 .podium .p1 { border-top-color: var(--gold); } .podium .p2 { border-top-color: var(--silver); } .podium .p3 { border-top-color: var(--bronze); }
 .podium .who { font: 700 var(--t-lg)/1.15 var(--display); }
-.podium .who a { color: inherit; text-decoration: none; }
+.podium .who a { color: inherit; }
 .podium .who a:hover { color: var(--accent); }
 .podium .pts { font: 700 var(--t-2xl)/1 var(--display); margin-top: var(--sp-2); font-variant-numeric: tabular-nums; }
 .podium .pts small { font: 600 var(--t-sm) var(--body); color: var(--muted); }
@@ -272,6 +341,7 @@ table.t { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
 .glossary dt { font: 700 var(--t-md)/1.2 var(--display); }
 .glossary dd { margin: 0; font-size: var(--t-sm); color: var(--ink-2); }
 
+/* ---------- Formularios ---------- */
 /* Filtro en tablas */
 .filter { display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: center; }
 .filter input, .field { font: inherit; padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); width: min(100%, 360px); }
@@ -289,6 +359,8 @@ table.t { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
 /* Aviso del filtro de zona */
 .aviso { max-width: none; padding: var(--sp-3) var(--sp-4); border-radius: var(--radius-sm); background: var(--accent-soft); color: var(--ink-2); font-size: var(--t-sm); }
 .aviso a { font-weight: 600; margin-left: var(--sp-1); }
+.aviso-texto { margin-top: var(--sp-3); }
+.aviso-texto a { margin-left: 0; }
 
 /* Ficha de ubicación de un club */
 .ficha { display: flex; flex-wrap: wrap; gap: var(--sp-3) var(--sp-6); margin: 0; }
@@ -300,17 +372,44 @@ table.t { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
 .t td .nacional { margin-left: 6px; font-size: var(--t-xs); color: var(--muted); }
 
 /* ---------- Pantallas angostas ---------- */
-@media (max-width: 860px) {
-  .masthead-row { gap: 0 var(--sp-4); }
+/* Pantallas medianas: logo y buscador arriba, menú en su propia fila */
+@media (max-width: 1140px) {
+  .masthead-row { gap: 0 var(--sp-4); flex-wrap: wrap; }
   .mainnav { order: 3; width: 100%; margin-right: 0; border-top: 1px solid var(--navy-line); flex-wrap: wrap; overflow: visible; }
   .mainnav a { padding: 12px var(--sp-3) 9px; }
-  .search { order: 4; width: 100%; padding-bottom: var(--sp-3); }
-  .search input { width: 100%; }
+  .search { order: 2; margin-left: auto; }
+}
+.buscar-movil { display: none; }
+/* Celular: menú en una sola fila deslizable y lupa en vez del buscador, para que el contenido empiece antes */
+@media (max-width: 860px) {
+  .search { display: none; }
+  .buscar-movil { display: inline-flex; order: 2; margin-left: auto; width: 44px; height: 44px; align-items: center; justify-content: center;
+    color: var(--on-navy); border: 1px solid var(--navy-line); border-radius: var(--radius-sm); }
+  .mainnav { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .mainnav::-webkit-scrollbar { display: none; }
 }
 @media (max-width: 560px) {
   .mainnav a { padding-inline: 8px; font-size: var(--t-sm); }
+  .subnav .wrap { gap: 6px; padding-block: var(--sp-2); }
+  .pill { padding: 6px 11px; }
   .page-head h1 { font-size: var(--t-xl); }
   .stat b { font-size: var(--t-xl); }
   .formula .op { display: none; }
   .card { padding: var(--sp-4); }
+}
+
+/* ---------- Impresión ---------- */
+/* Se imprime solo el contenido y siempre en colores claros (el tema oscuro aplica solo en pantalla).
+   La portada tiene fondo azul oscuro: sin fondos, su texto claro no se vería en el papel. */
+@media print {
+  .saltar, .obi, .masthead, .subnav, .footer, #filtro-clubes, #filtro-info { display: none !important; }
+  body { background: #fff; }
+  .hero { --navy: #fff; --navy-2: #fff; --navy-line: var(--line); --on-navy: var(--ink); --on-navy-2: var(--ink-2);
+    --hero-em: var(--accent); padding-block: 0 var(--sp-5); }
+  .hero .eyebrow { color: var(--tag-renida); }
+  .table-wrap { overflow: visible; background: none; }
+  .t th[scope="row"], .t th.col-fija { position: static; box-shadow: none; }
+  .card, .stat, tr, .geo-fila { break-inside: avoid; }
+  /* Barras, leyendas, medallas y mapa de calor llevan su color también en el papel */
+  .bar, .bar > span, .legend i, .heat td, .tag, .rank, .geo-fila, .hbars * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }

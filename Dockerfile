@@ -8,6 +8,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY judo ./judo
 COPY wsgi.py .
+# Respaldo: estas planillas se publican solo si el servidor parte sin datos y Drive falla.
+COPY planillas ./planillas
 
 RUN useradd --create-home judo && mkdir -p /app/data && chown -R judo /app/data
 USER judo

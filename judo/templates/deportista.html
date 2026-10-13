@@ -1,12 +1,17 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui with context %}
-{% block title %}{{ dep.nombre }}{% endblock %}
+{% block title %}{{ dep.nombre }}{% if dep.homonimos %} · {{ dep.clubes|map(attribute='club_nombre')|join(', ') }}{% endif %}{% endblock %}
 
 {% block content %}
 <div class="page-head">
   <span class="eyebrow">Deportista · {{ dep.sexo_txt }}</span>
   <h1>{{ dep.nombre }}</h1>
-  <p class="lead">{% for c in dep.clubes %}{{ ui.club(c.club_nombre, c.club_slug) }}{% if c.region %} <span class="muted">({{ c.region|region_larga }})</span>{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</p>
+  <p class="lead">{% for c in dep.clubes %}{{ ui.club(c.club_nombre, c.club_slug) }}{% if c.region %} <span class="muted">(<a class="plain" href="{{ url_for('vistas.region', slug=c.region|region_slug) }}">{{ c.region|region_larga }}</a>)</span>{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</p>
+  {% if dep.homonimos %}
+  <p class="aviso aviso-texto">{{ 'Hay otra ficha' if dep.homonimos|length == 1 else 'Hay otras fichas' }} con el mismo nombre:
+    {% for h in dep.homonimos %}<a href="{{ url_for('vistas.deportista', slug=h.dep_slug) }}">{{ h.deportista }}</a> ({{ h.club_nombre }}){{ ', ' if not loop.last }}{% endfor %}.
+    Las planillas oficiales no identifican a cada deportista, así que puede ser otra persona o la misma después de cambiarse de club.</p>
+  {% endif %}
 </div>
 
 <div class="stack">
@@ -29,7 +34,7 @@
       <tbody>
       {% for d in dep.filas %}
         <tr>
-          <th scope="row"><a href="{{ ui.cat_url(d.grupo_slug, d.cat_slug) }}">{{ d.categoria }}</a><span class="sub">{{ d.club_nombre }}</span></th>
+          <th scope="row"><a href="{{ ui.cat_url(d.grupo_slug, d.cat_slug) }}">{{ d.categoria }}</a><span class="sub">{{ d.club_nombre }}{% if d.repetida %} · aparece dos veces en la planilla oficial{% endif %}</span></th>
           <td class="rk">{{ ui.rank(d.pos) }} <span class="muted">de {{ d.inscritos }}</span></td>
           <td class="n"><b>{{ d.total|pts }}</b></td>
           <td>{{ ui.composicion(d.arrastre, d.torneos, d.p1) }}</td>

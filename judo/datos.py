@@ -36,6 +36,10 @@ GRUPOS = {
     "SUB21": ("Sub 21", 4, "sub-21"),
     "ABSOLUTA": ("Absoluta", 5, "absoluta"),
 }
+# Edades de menores de 18 años (Sub 13, Sub 15 y Sub 18; se calcula sola si se agrega otra edad).
+# Sus fichas y rankings no se indexan en buscadores, y en las demás páginas Google no muestra sus nombres.
+GRUPOS_MENORES = {slug for etiqueta, _, slug in GRUPOS.values()
+                  if etiqueta.startswith("Sub ") and int(etiqueta[4:]) <= 18}
 SEXOS = {"F": "Mujeres", "M": "Hombres"}
 
 # Variantes de escritura del mismo club detectadas en las planillas.
@@ -115,39 +119,47 @@ class PlanillaInvalida(ValueError):
 # Utilidades de texto
 # ----------------------------------------------------------------------------
 def limpiar(txt) -> str:
+    """Texto de una celda en mayúsculas y sin espacios de más (celda vacía -> '')."""
     if txt is None:
         return ""
     return re.sub(r"\s+", " ", str(txt)).strip().upper()
 
 
 def sin_tildes(txt: str) -> str:
+    """'Ñuñoa Peñalolén' -> 'Nunoa Penalolen'."""
     t = unicodedata.normalize("NFD", txt)
     return "".join(ch for ch in t if unicodedata.category(ch) != "Mn")
 
 
 def slug(txt: str) -> str:
+    """Texto para direcciones web: 'Río Cruces' -> 'rio-cruces'."""
     return re.sub(r"[^a-z0-9]+", "-", sin_tildes(txt.lower())).strip("-")
 
 
 def normalizar_club(txt) -> str:
+    """Nombre unificado del club: sin puntos ni espacios de más y con las variantes de ALIAS_CLUBES resueltas."""
     c = re.sub(r"\s+", " ", limpiar(txt).replace(".", "")).strip()
     return ALIAS_CLUBES.get(c, ALIAS_CLUBES.get(limpiar(txt), c))
 
 
 def nombre_club(c: str) -> str:
+    """Nombre para mostrar de un club sin ficha en clubes.csv: 'RIO CRUCES' -> 'Rio Cruces'."""
     return "Sin club" if c in SIN_CLUB else c.title()
 
 
 def slug_club(c: str) -> str:
+    """Identificador del club en las direcciones web."""
     return SLUG_SIN_CLUB if c in SIN_CLUB else slug(c)
 
 
 def detectar_grupo(nombre_archivo: str) -> str | None:
+    """Grupo de edad según el nombre del archivo: 'RANKING  SUB13 2026.xlsx' -> 'SUB13' (None si no es una planilla)."""
     clave = re.sub(r"[^A-Z0-9]", "", sin_tildes(nombre_archivo.upper()))
     return next((g for g in GRUPOS if g in clave), None)
 
 
 def _num(v) -> float:
+    """Puntaje de una celda: lo que no es número (vacío, texto) cuenta como 0."""
     return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else 0.0
 
 
@@ -187,6 +199,13 @@ def _anio_hoja(hdr) -> int:
 
 
 def leer_hoja(ws, grupo: str) -> tuple[int, list[dict]]:
+    """Lee una hoja (una categoría de peso). Devuelve (año del ranking, una fila por deportista).
+
+    Arriba de la fila "APELLIDOS" están los datos de la categoría (CATEG., SEXO, PESO: rótulo en la
+    columna B y valor en la C). Bajo esa fila vienen dos filas más de encabezado y luego los deportistas:
+    A = lugar, B = primer apellido, C = segundo apellido (casi siempre vacío), D = nombre, E = club, y
+    después los bloques de puntos de cada año (ver el comienzo del archivo).
+    """
     filas = list(ws.iter_rows(values_only=True))
     try:
         h = next(i for i, r in enumerate(filas) if "APELLIDOS" in [limpiar(x) for x in r])
@@ -209,7 +228,7 @@ def leer_hoja(ws, grupo: str) -> tuple[int, list[dict]]:
     peso, kg, pslug = _peso(ws.title)
 
     registros = []
-    for r in filas[h + 3:]:
+    for r in filas[h + 3:]:  # deportistas: tras la fila "APELLIDOS" y sus dos filas de encabezado
         ape1, ape2, nombre = limpiar(r[1]), limpiar(r[2]), limpiar(r[3])
         if not (ape1 or nombre):
             continue
@@ -271,8 +290,13 @@ def cargar_directorio(directorio: str | Path) -> tuple[pd.DataFrame, int]:
     # El lugar se recalcula por puntaje: algunas planillas traen la numeración desordenada.
     df = df.sort_values(["orden_grupo", "sexo", "kg", "total"], ascending=[True, True, True, False], kind="stable")
     df["pos"] = df.groupby("cat_id").cumcount() + 1
-    df["dep_slug"] = df.deportista.map(slug) + "-" + df.sexo.str.lower()
     df["club_slug"] = df.club.map(slug_club)
+    # Las planillas no traen RUT ni fecha de nacimiento, y casi siempre un solo apellido: un mismo nombre
+    # puede ser de dos personas (un adulto y un niño del Sub 13, por ejemplo). Si un nombre aparece en más
+    # de un club, cada club tiene su propia ficha, y la ficha avisa que existe la otra.
+    df["dep_nombre_slug"] = df.deportista.map(slug) + "-" + df.sexo.str.lower()
+    varios_clubes = df.groupby("dep_nombre_slug").club_slug.transform("nunique") > 1
+    df["dep_slug"] = df.dep_nombre_slug.where(~varios_clubes, df.dep_nombre_slug + "-" + df.club_slug)
     df["con_club"] = ~df.club.isin(SIN_CLUB)
     # Nombre visible, región y zona salen de la ficha de cada club (judo/clubes.csv).
     fichas = ubicaciones.cargar()
@@ -282,5 +306,14 @@ def cargar_directorio(directorio: str | Path) -> tuple[pd.DataFrame, int]:
     return df.reset_index(drop=True), anio
 
 
-def fecha_archivos(directorio: str | Path) -> dt.date:
-    return max(dt.date.fromtimestamp(os.path.getmtime(p)) for p in Path(directorio).glob("*.xlsx"))
+def fecha_guardado(ruta: str | Path) -> dt.datetime:
+    """Cuándo la federación guardó la planilla (dato interno del .xlsx; si falta, la fecha del archivo)."""
+    try:
+        wb = openpyxl.load_workbook(ruta, read_only=True)
+        guardado = wb.properties.modified
+        wb.close()
+        if guardado:
+            return guardado.replace(tzinfo=dt.timezone.utc)
+    except Exception:
+        pass
+    return dt.datetime.fromtimestamp(os.path.getmtime(ruta), dt.timezone.utc)

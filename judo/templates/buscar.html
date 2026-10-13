@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui with context %}
-{% block title %}Buscar{% endblock %}
+{% block title %}{% if q %}Resultados para “{{ q }}”{% else %}Buscar{% endif %}{% endblock %}
 
 {% block content %}
 <div class="page-head">
   <h1>{% if q %}Resultados para “{{ q }}”{% else %}Buscar{% endif %}</h1>
-  <form class="filter" action="{{ url_for('vistas.buscar') }}" role="search">
+  <form class="filter" action="{{ url_for('vistas.buscar') }}" role="search" aria-label="Buscar deportistas o clubes">
     <label class="sr-only" for="q-main">Nombre, apellido o club</label>
-    <input class="field" id="q-main" type="search" name="q" value="{{ q }}" placeholder="Nombre, apellido o club" autocomplete="off">
+    <input class="field" id="q-main" type="search" name="q" value="{{ q }}" placeholder="Nombre, apellido o club" autocomplete="off"{% if not q %} autofocus{% endif %}>
   </form>
 </div>
 
@@ -19,11 +19,11 @@
 {% else %}
   {% if res.clubes %}
   <section class="card">
-    <div class="card-head"><h3>Clubes</h3></div>
+    <div class="card-head"><h2>Clubes</h2></div>
     <ul class="dlist">
       {% for c in res.clubes %}
       <li><span class="title">{{ ui.club(c.club_nombre, c.club_slug) }}</span>
-        <span class="meta">{{ c.ciudad or 'Ciudad sin confirmar' }}{% if c.region %} · {{ c.region|region_larga }}{% endif %}</span>
+        <span class="meta">{{ c.ciudad or 'Ciudad sin confirmar' }}{% if c.region %} · <a class="plain" href="{{ url_for('vistas.region', slug=c.region|region_slug) }}">{{ c.region|region_larga }}</a>{% endif %}</span>
         <span class="note">Puesto {{ c.lugar }} del país · {{ c.puntos|pts }} pts · {{ c.deportistas }} {{ 'deportista' if c.deportistas == 1 else 'deportistas' }} · {{ c.podios }} {{ "podio" if c.podios == 1 else "podios" }}</span></li>
       {% endfor %}
     </ul>

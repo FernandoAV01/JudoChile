@@ -27,7 +27,7 @@ MIME_SHEETS = "application/vnd.google-apps.spreadsheet"
 
 
 class ErrorDrive(RuntimeError):
-    pass
+    """No se pudo listar o descargar la carpeta; el mensaje explica qué revisar."""
 
 
 @dataclass(frozen=True)
@@ -39,6 +39,7 @@ class ArchivoDrive:
     tamano: int | None = None
 
     def firma(self) -> str:
+        """Identifica esta versión del archivo: cambia si la federación lo reemplaza o lo edita."""
         return f"{self.id}:{self.modificado.isoformat()}:{self.tamano}"
 
     def como_dict(self) -> dict:
@@ -47,6 +48,7 @@ class ArchivoDrive:
 
 
 def listar(carpeta_id: str, api_key: str | None = None) -> list[ArchivoDrive]:
+    """Archivos de la carpeta: con la API si hay clave; si no, desde la página pública."""
     archivos = _listar_api(carpeta_id, api_key) if api_key else _listar_pagina(carpeta_id)
     log.info("Drive: %d archivos en la carpeta", len(archivos))
     return archivos
@@ -85,6 +87,8 @@ def _listar_pagina(carpeta_id: str) -> list[ArchivoDrive]:
     if not m:
         raise ErrorDrive("La página de la carpeta cambió de formato. Define GOOGLE_API_KEY para usar la API oficial.")
     crudo = re.sub(r"\\x([0-9a-fA-F]{2})", lambda x: chr(int(x.group(1), 16)), m.group(1)).replace("\\/", "/")
+    # Cada archivo es una lista: [0] id, [1] carpetas que lo contienen, [2] nombre, [3] tipo (MIME),
+    # [9] fecha de modificación en milisegundos, [13] tamaño en bytes.
     try:
         filas = json.loads(crudo)[0] or []
         salida = []

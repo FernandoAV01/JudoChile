@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+{% block title %}Regiones{% if zona %} · Zona {{ zona_nombre }}{% endif %}{% endblock %}
+{% block subnav %}{{ ui.subnav_zona() }}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>{% if zona %}Regiones de la Zona {{ zona_nombre }}{% else %}Cómo le va a cada región{% endif %}</h1>
+  <p class="lead">Los puntos de ranking de todos los deportistas, sumados por región. Cada deportista cuenta para la región de su club.</p>
+  {{ ui.aviso_zona('regiones') }}
+</div>
+
+{% set rr = resumen_reg %}
+<div class="stack">
+  <div class="stats">
+    <div class="stat"><b>{{ rr.top.puntos|pts }}</b><span>puntos de la {{ rr.top.region|region_larga }}, la que más suma</span></div>
+    <div class="stat"><b>{{ rr.mejor_promedio.por_deportista|pts }}</b><span>puntos por deportista en la {{ rr.mejor_promedio.region|region_larga }}, el mejor promedio</span></div>
+    <div class="stat"><b>{{ rr.mas_clubes.clubes }}</b><span>clubes en la {{ rr.mas_clubes.region|region_larga }}, la que tiene más</span></div>
+    {% if not zona %}<div class="stat"><b>{{ rr.zona_top.puntos|pts }}</b><span>puntos de la Zona {{ rr.zona_top.nombre }}, la zona que más suma</span></div>{% endif %}
+  </div>
+</div>
+
+<section class="section">
+  <div class="section-head"><h2>{% if zona %}La zona de norte a sur{% else %}Chile de norte a sur{% endif %}</h2>
+    <p>Los puntos de cada región en orden geográfico. Cada barra se compara con la región que más suma.</p></div>
+  {% set maximo = regiones|map(attribute='puntos')|max %}
+  <div class="card">
+    <div class="geo">
+      {% for g in geo %}
+      <p class="geo-zona"><a class="plain" href="{{ url_for('vistas.regiones', zona=g.zona) }}">Zona {{ g.nombre }}</a></p>
+      {% for f in g.filas %}
+      <div class="geo-fila">
+        <span class="nombre">{{ ui.region(f.region) }}<small>{{ f.clubes }} {{ f.clubes|pl('club', 'clubes') }} · {{ f.deportistas }} {{ f.deportistas|pl('deportista', 'deportistas') }}</small></span>
+        {{ ui.bar(f.puntos, maximo) }}
+        <span class="v">{{ f.puntos|pts }}</span>
+      </div>
+      {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head"><h2>Ranking de regiones</h2>
+    <p>Ordenadas por puntos totales. "Por deportista" divide esos puntos por la cantidad de deportistas, para comparar regiones grandes y chicas.{% if zona %} "Nacional" es el puesto de la región en todo el país.{% endif %}</p></div>
+  <div class="table-wrap">
+    <table class="t">
+      <thead><tr><th class="n">#</th><th>Región</th><th>Zona</th><th class="n">Puntos</th>
+        <th class="n" title="Puntos totales divididos por la cantidad de deportistas">Por deportista</th><th class="n">Clubes</th><th class="n">Deportistas</th>
+        <th class="n" title="Categorías donde la región tiene al 1.º del ranking">1.º</th><th class="n">2.º</th><th class="n">3.º</th>
+        <th>Club con más puntos</th>{% if zona %}<th class="n" title="Puesto de la región en todo el país">Nacional</th>{% endif %}</tr></thead>
+      <tbody>
+      {% for f in regiones %}
+        <tr>
+          <td class="n">{{ f.puesto }}</td>
+          <th scope="row">{{ ui.region(f.region) }}</th>
+          <td><a class="plain" href="{{ url_for('vistas.regiones', zona=f.zona) }}">{{ NOMBRE_ZONA[f.zona] }}</a></td>
+          <td class="n"><b>{{ f.puntos|pts }}</b></td>
+          <td class="n">{{ f.por_deportista|pts }}</td>
+          <td class="n">{{ f.clubes }}</td>
+          <td class="n">{{ f.deportistas }}</td>
+          <td class="n g">{{ f.oro }}</td><td class="n s">{{ f.plata }}</td><td class="n b">{{ f.bronce }}</td>
+          <td>{{ ui.club(f.mejor_club, f.mejor_club_slug) }}</td>
+          {% if zona %}<td class="n">{{ f.lugar }}.º</td>{% endif %}
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head"><h2>Dónde gana cada región</h2>
+    <p>Podios (1.º a 3.º) de cada región en cada edad, de norte a sur. Más oscuro, más podios.</p></div>
+  <div class="table-wrap">
+    <table class="t heat">
+      <thead><tr><th>Región</th>{% for etiqueta, _, gslug in mapa.grupos %}<th><a class="plain" href="{{ url_for('vistas.grupo', grupo=gslug, zona=zona or None) }}">{{ etiqueta }}</a></th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for f in mapa.filas %}
+        <tr><th scope="row">{{ ui.region(f.region) }}</th>
+        {% for v in f.valores %}{{ ui.celda_calor(v, mapa.max, f.region ~ ' · ' ~ mapa.grupos[loop.index0][0]) }}{% endfor %}</tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="caption">La región de cada deportista es la de su club, según el registro de clubes de la federación. <a href="{{ url_for('vistas.metodologia') }}">Cómo se calcula</a></p>
+</section>
+{% endblock %}

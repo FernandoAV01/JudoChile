@@ -36,7 +36,7 @@
 
   <div class="grid-2">
     <div class="card">
-      <div class="card-head"><h3>Presencia por edad</h3><p class="caption">Cuántos deportistas tiene el club en cada edad y cuántos están en el podio.</p></div>
+      <div class="card-head"><h2>Presencia por edad</h2><p class="caption">Cuántos deportistas tiene el club en cada edad y cuántos están en el podio.</p></div>
       <div class="legend"><span><i class="sw-s1"></i>Deportistas</span><span><i class="sw-s2"></i>Podios (1.º a 3.º)</span></div>
       {% set pmax = [club.presencia|map(attribute='deportistas')|max, 1]|max %}
       <div class="hbars">
@@ -51,7 +51,7 @@
       </div>
     </div>
     <div class="card">
-      <div class="card-head"><h3>Sus números 1</h3><p class="caption">Categorías donde un deportista del club encabeza el ranking.</p></div>
+      <div class="card-head"><h2>Sus números 1</h2><p class="caption">Categorías donde un deportista del club encabeza el ranking.</p></div>
       {% if club.numeros_uno %}
       <ul class="dlist">
         {% for d in club.numeros_uno %}

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+{% block title %}{{ reg.nombre_largo }}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <nav class="crumbs" aria-label="Ruta"><a href="{{ url_for('vistas.regiones') }}">Regiones</a><span aria-hidden="true">/</span><span>{{ reg.region }}</span></nav>
+  <h1>{{ reg.nombre_largo }}</h1>
+  <p class="lead">Puesto <b>{{ reg.lugar }}</b> de {{ reg.n_regiones }} regiones en puntos totales y <b>{{ reg.puesto_zona }}</b> de {{ reg.n_zona }} en la <a href="{{ url_for('vistas.regiones', zona=reg.zona) }}">Zona {{ reg.zona_nombre }}</a>.</p>
+</div>
+
+<div class="stack">
+  <div class="stats">
+    <div class="stat"><b>{{ reg.puntos|pts }}</b><span>puntos totales</span></div>
+    <div class="stat"><b>{{ reg.por_deportista|pts }}</b><span>puntos por deportista</span></div>
+    <div class="stat"><b>{{ reg.clubes }}</b><span>{{ reg.clubes|pl('club', 'clubes') }}</span></div>
+    <div class="stat"><b>{{ reg.deportistas }}</b><span>{{ reg.deportistas|pl('deportista', 'deportistas') }} en el ranking</span></div>
+    <div class="stat"><b>{{ reg.oro }}</b><span>{{ reg.oro|pl('categoría que lidera', 'categorías que lidera') }}</span></div>
+    <div class="stat"><b>{{ reg.podios }}</b><span>{{ reg.podios|pl('podio', 'podios') }} (1.º a 3.º)</span></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-head"><h2>Por edad</h2><p class="caption">El puesto de la región entre todas las regiones, en cada grupo de edad.</p></div>
+      <div class="table-wrap">
+        <table class="t">
+          <thead><tr><th>Edad</th><th class="n">Puesto</th><th class="n">Puntos</th><th class="n">Deportistas</th><th class="n">Podios</th></tr></thead>
+          <tbody>
+          {% for e in reg.por_edad %}
+            <tr>
+              <th scope="row">{{ e.grupo }}</th>
+              <td class="n">{% if e.puesto %}<b>{{ e.puesto }}.º</b> <span class="muted">de {{ e.n }}</span>{% else %}<span class="muted">Sin deportistas</span>{% endif %}</td>
+              <td class="n">{{ e.puntos|pts }}</td>
+              <td class="n">{{ e.deportistas }}</td>
+              <td class="n">{{ e.podios }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Sus figuras</h2><p class="caption">Los deportistas de la región con más puntos de ranking, cada uno con su mejor categoría.</p></div>
+      {{ ui.lista_figuras(reg.figuras) }}
+    </div>
+  </div>
+</div>
+
+<section class="section">
+  <div class="section-head"><h2>Sus números 1</h2>
+    <p>{% if reg.numeros_uno %}Las {{ reg.numeros_uno|length }} {{ reg.numeros_uno|length|pl('categoría', 'categorías') }} donde un deportista de la región va 1.º en el ranking nacional.{% else %}Ningún deportista de la región va 1.º en una categoría del ranking nacional.{% endif %}</p></div>
+  {% if reg.numeros_uno %}
+  <div class="table-wrap">
+    <table class="t">
+      <thead><tr><th>Categoría</th><th>Deportista</th><th>Club</th><th class="n">Puntos</th></tr></thead>
+      <tbody>
+      {% for d in reg.numeros_uno %}
+        <tr>
+          <td><a href="{{ ui.cat_url(d.grupo_slug, d.cat_slug) }}">{{ d.categoria }}</a></td>
+          <th scope="row">{{ ui.dep(d.deportista, d.dep_slug) }}</th>
+          <td>{{ ui.club(d.club_nombre, d.club_slug) }}</td>
+          <td class="n">{{ d.total|pts }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</section>
+
+<section class="section">
+  <div class="section-head"><h2>Sus clubes</h2>
+    <p>{{ reg.clubes_lista|length }} {{ reg.clubes_lista|length|pl('club', 'clubes') }} de la región, {{ 'ordenado' if reg.clubes_lista|length == 1 else 'ordenados' }} por puntos totales. "Nacional" es su puesto en todo el país.</p></div>
+  {{ ui.tabla_clubes(reg.clubes_lista, reg.clubes_lista[0].puntos, con_nacional=True, columna='comuna') }}
+</section>
+
+{% endblock %}

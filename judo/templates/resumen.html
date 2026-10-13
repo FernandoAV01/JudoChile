@@ -31,6 +31,7 @@
   <div class="links">
     <a class="more" href="{{ url_for('vistas.clubes') }}">Ver los {{ res.clubes }} clubes, con su región</a>
     <a class="more" href="{{ url_for('vistas.por_clubes_inicio') }}">Ver qué clubes suman más en cada categoría</a>
+    <a class="more" href="{{ url_for('vistas.regiones') }}">Ver cómo le va a cada región</a>
   </div>
   <div class="grid-2">
     <div class="card">
@@ -42,10 +43,7 @@
           <tbody>
           {% for f in mapa.filas %}
             <tr><th scope="row">{{ ui.club(f.club, f.slug) }}</th>
-            {% for v in f.valores %}
-              {% set lvl = 0 if v == 0 else 1 + ((v - 1) * 5 // ([mapa.max - 1, 1]|max)) %}
-              <td class="h h{{ lvl }}" title="{{ f.club }} · {{ mapa.grupos[loop.index0][0] }}: {{ v }} {{ v|pl('podio', 'podios') }}">{{ v if v else '·' }}</td>
-            {% endfor %}</tr>
+            {% for v in f.valores %}{{ ui.celda_calor(v, mapa.max, f.club ~ ' · ' ~ mapa.grupos[loop.index0][0]) }}{% endfor %}</tr>
           {% endfor %}
           </tbody>
         </table>
@@ -77,21 +75,9 @@
         ('total', 'Más puntos de ranking', 'Arrastre del año anterior + torneos ' ~ rk.anio ~ '.', 'total', ''),
         ('temporada', 'En racha este ' ~ rk.anio, 'Solo lo ganado en torneos de este año.', 'torneos', 's3'),
         ('intl', 'Chile en el extranjero', 'Ranking internacional: Open, Panamericanos, Grand Prix y más.', 'intl', 's2')] %}
-    {% set lista = figuras[clave] %}
-    {% set maximo = lista[0][campo] if lista else 1 %}
     <div class="card">
       <div class="card-head"><h3>{{ titulo }}</h3><p class="caption">{{ nota }}</p></div>
-      <ol class="rlist">
-        {% for d in lista %}
-        <li>
-          <span class="n">{{ loop.index }}</span>
-          <span class="t"><b>{{ ui.dep(d.deportista, d.dep_slug) }}</b>
-            <small><a href="{{ ui.cat_url(d.grupo_slug, d.cat_slug) }}">{{ d.grupo }} {{ d.sexo_txt|lower }} {{ d.peso }}</a> · {{ d.club_nombre }}</small></span>
-          <span class="v">{{ d[campo]|pts }}</span>
-          {{ ui.bar(d[campo], maximo, variante) }}
-        </li>
-        {% endfor %}
-      </ol>
+      {{ ui.lista_figuras(figuras[clave], campo, variante) }}
     </div>
     {% endfor %}
   </div>

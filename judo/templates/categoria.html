@@ -15,6 +15,7 @@
 </div>
 
 <div class="stack">
+  {% if filas %}
   <div class="stats">
     <div class="stat"><b>{{ cat.inscritos }}</b><span>{{ 'deportista' if cat.inscritos == 1 else 'deportistas' }} en el ranking{% if zona %} de la zona{% endif %}</span></div>
     <div class="stat"><b>{{ cat.activos }}</b><span>{{ 'sumó' if cat.activos == 1 else 'sumaron' }} puntos en {{ rk.anio }}</span></div>
@@ -22,7 +23,6 @@
     {% if cat.competencia %}<div class="stat"><span>Nivel de competencia</span>{{ ui.tag(cat.competencia) }}</div>{% endif %}
   </div>
 
-  {% if filas %}
   <div class="podium">
     {% for d in filas[:3] %}
     {% set lugar = d.pos_zona if zona else d.pos %}
@@ -36,7 +36,7 @@
     {% endfor %}
   </div>
   {% else %}
-  <div class="card empty">Ningún deportista de la Zona {{ zona_nombre }} aparece en esta categoría.</div>
+  <div class="card empty">{% if zona %}Ningún deportista de la Zona {{ zona_nombre }} aparece en esta categoría.{% else %}Esta categoría todavía no tiene deportistas en el ranking.{% endif %}</div>
   {% endif %}
 </div>
 

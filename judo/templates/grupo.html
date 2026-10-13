@@ -24,7 +24,7 @@
     <a class="card card-link cat-card" href="{{ url_for('vistas.categoria', grupo=c.grupo_slug, cat=c.cat_slug, zona=zona or None) }}">
       <header><h3>{{ c.peso }}</h3>{{ ui.tag(c.competencia, c.ventaja) }}</header>
       {% if c.lider %}
-      <span class="leader">{{ ui.rank(1) }}<span>{{ c.lider }}</span></span>
+      <span class="leader">{{ ui.rank(1) }}<span>{{ ui.nombre_dep(c.lider, c.lider_slug) }}</span></span>
       <span class="caption">{{ c.lider_club }} · {{ c.p1|pts }} pts</span>
       <span class="caption">{{ c.inscritos }} {{ 'deportista' if c.inscritos == 1 else 'deportistas' }} · {{ c.activos }} {{ 'sumó' if c.activos == 1 else 'sumaron' }} puntos en {{ rk.anio }}</span>
       {% else %}

@@ -46,7 +46,7 @@
           <td>{{ ui.bar(c.puntos, clubes[0].puntos) }}</td>
           <td class="n">{{ c.deportistas }}</td>
           {% if not cat %}<td class="n g">{{ c.oro }}</td><td class="n s">{{ c.plata }}</td><td class="n b">{{ c.bronce }}</td>{% endif %}
-          <td>{{ ui.rank(c.mejor_pos) }} {{ ui.dep(c.mejor, c.mejor_slug) }}{% if not cat %} <span class="muted">· {{ c.mejor_peso }}</span>{% endif %}</td>
+          <td>{{ ui.rank(c.mejor_pos) }} {{ ui.dep(c.mejor, c.mejor_slug) }}{% if not cat %}<span class="sub">{{ c.mejor_peso }}</span>{% endif %}</td>
         </tr>
       {% endfor %}
       </tbody>

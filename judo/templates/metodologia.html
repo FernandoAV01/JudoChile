@@ -28,9 +28,12 @@
   <div class="grid-3">
     {% for z, nombre_z in ZONAS %}
     <div class="card">
-      <div class="card-head"><h3>Zona {{ nombre_z }}</h3><p class="caption">{{ regiones_de_zona[z]|enumerar }}</p></div>
+      <div class="card-head"><h3>Zona {{ nombre_z }}</h3><p class="caption">{% for x in regiones_de_zona[z] %}<a class="plain" href="{{ url_for('vistas.region', slug=x|region_slug) }}">{{ x }}</a>{{ ', ' if loop.revindex > 2 else (' y ' if loop.revindex == 2 else '') }}{% endfor %}</p></div>
       {% set de_zona = clubes|selectattr('zona', 'equalto', z)|list %}
-      <p><a href="{{ url_for('vistas.clubes', zona=z) }}">{{ de_zona|length }} {{ de_zona|length|pl('club', 'clubes') }} en el ranking</a></p>
+      <div class="links">
+        <a class="more" href="{{ url_for('vistas.clubes', zona=z) }}">{{ de_zona|length }} {{ de_zona|length|pl('club', 'clubes') }} en el ranking</a>
+        <a class="more" href="{{ url_for('vistas.regiones', zona=z) }}">Sus regiones</a>
+      </div>
     </div>
     {% endfor %}
   </div>
@@ -38,6 +41,8 @@
     <ul class="dlist">
       <li><span class="title">De dónde sale la ubicación</span>
         <span class="meta">La ciudad y la región de cada club vienen del <a href="https://app.fejuchile.cl/show/clubs" target="_blank" rel="noopener">registro de clubes de la federación</a>. Para comprobarlo, en octubre de 2026 cruzamos a los deportistas del ranking con el registro de judokas de la federación: en 120 de los 129 clubes con deportistas inscritos, el club calza exactamente, y en los 9 restantes calza la región (son deportistas que se cambiaron de club dentro de la misma zona).</span></li>
+      <li><span class="title">Regiones</span>
+        <span class="meta">Cada deportista cuenta para la región de su club. En la sección <a href="{{ url_for('vistas.regiones') }}">Regiones</a>, "por deportista" divide los puntos de la región por la cantidad de deportistas, para comparar regiones grandes y chicas.</span></li>
       <li><span class="title">Coquimbo</span>
         <span class="meta">En 2022 competía en la Zona Centro; en 2026 sus clubes compiten en el zonal Norte. El sitio usa la división de 2026.</span></li>
       <li><span class="title">Clubes sin ubicación</span>
@@ -56,7 +61,7 @@
         <li><span class="title">Planillas vigentes</span><span class="meta">Publicadas por la federación el {{ estado.fecha_planillas|fecha }}</span></li>
         <li><span class="title">Última revisión</span>
           <span class="meta">{{ estado.ultima_revision|fecha(true) }} ·
-            {% if estado.resultado == 'error' %}no se pudo completar, así que se mantienen los datos anteriores{% elif estado.resultado == 'sin cambios' %}la carpeta no tenía cambios{% else %}se descargó una versión nueva{% endif %}</span></li>
+            {% if estado.resultado == 'error' %}no se pudo completar, así que se mantienen los datos anteriores{% elif estado.resultado == 'respaldo' %}no se pudo descargar de Drive, así que se muestra la copia de las planillas incluida en el sitio (puede haber una más nueva){% elif estado.resultado == 'sin cambios' %}la carpeta no tenía cambios{% else %}se descargó una versión nueva{% endif %}</span></li>
         <li><span class="title">Próxima revisión</span><span class="meta">{{ proxima|fecha(true) }} (todos los domingos en la noche)</span></li>
         <li><span class="title">Contenido</span><span class="meta">{{ res.registros|pts }} filas: {{ res.deportistas|pts }} deportistas en {{ res.categorias }} categorías</span></li>
       </ul>
@@ -84,7 +89,8 @@
       <li><span class="title">La temporada sigue en curso</span><span class="meta">Quien todavía no compite este año solo tiene los puntos que arrastra del año pasado. Por eso la portada también muestra quién va “en racha”.</span></li>
       <li><span class="title">Nombres de clubes</span><span class="meta">En las planillas, un mismo club aparece escrito de varias formas (por ejemplo, “U CHILE” y “U DE CHILE”) y algunos cambiaron de nombre (Ozanam hoy se llama Chuseikan). El sitio unifica {{ res.variantes_club }} variantes.</span></li>
       {% if res.sin_club %}<li><span class="title">Deportistas sin club</span><span class="meta">{{ res.sin_club }} {{ res.sin_club|pl('deportista figura', 'deportistas figuran') }} sin club. Aparecen en los rankings individuales, pero no en la clasificación de clubes.</span></li>{% endif %}
-      <li><span class="title">Mismo nombre, misma persona</span><span class="meta">Las planillas no traen RUT, así que tratamos como una misma persona a quienes tienen el mismo nombre completo y el mismo sexo.</span></li>
+      <li><span class="title">Menores de edad</span><span class="meta">Las fichas de quienes compiten en Sub 13, Sub 15 o Sub 18 y los rankings de esas edades no aparecen en buscadores como Google. En las demás páginas (portada, clubes y regiones) sus nombres se ven igual, pero marcados para que Google no los muestre en sus resultados de búsqueda.</span></li>
+      <li><span class="title">Deportistas con el mismo nombre</span><span class="meta">Las planillas no traen RUT y casi siempre muestran un solo apellido. Por eso, dos personas con el mismo nombre y sexo cuentan como una sola solo si son del mismo club. Si el nombre aparece en dos clubes, cada club tiene su propia ficha y cada una avisa que existe la otra: puede ser otra persona o la misma después de cambiarse de club. Cuando la planilla anota dos veces a alguien en una misma categoría, el sitio lo respeta y lo indica en su ficha.</span></li>
       <li><span class="title">Comparar categorías</span><span class="meta">Las listas de la portada comparan puntajes de distintas categorías. Es una aproximación: en una categoría con más torneos o más inscritos se pueden sumar más puntos.</span></li>
       <li><span class="title">Lugares</span><span class="meta">El lugar se calcula ordenando por puntaje. Algunas planillas traen errores de numeración en la parte baja de la tabla.</span></li>
     </ul>

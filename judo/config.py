@@ -24,3 +24,5 @@ class Config:
     ACTUALIZACION_CRON = os.environ.get("ACTUALIZACION_CRON", "0 23 * * sun")
     PROGRAMADOR = _bool("PROGRAMADOR", True)
     VERSIONES_A_CONSERVAR = int(os.environ.get("VERSIONES_A_CONSERVAR", "12"))
+    # Planillas de respaldo (carpeta planillas/) por si el servidor parte sin datos y Drive falla.
+    SEMILLA_DIR = Path(os.environ.get("SEMILLA_DIR", RAIZ / "planillas"))

@@ -16,16 +16,23 @@
 <a class="plain" href="{{ url_for('vistas.club', slug=slug) }}">{{ nombre }}</a>
 {%- endmacro %}
 
+{# Nombre de un deportista, con enlace a su ficha. Los de menores de edad llevan data-nosnippet:
+   Google no los muestra en sus resultados aunque la página (un club, una región) sí se indexe. #}
 {% macro dep(nombre, slug) -%}
-<a class="plain" href="{{ url_for('vistas.deportista', slug=slug) }}">{{ nombre }}</a>
+<a class="plain" href="{{ url_for('vistas.deportista', slug=slug) }}">{{ nombre_dep(nombre, slug) }}</a>
+{%- endmacro %}
+
+{% macro nombre_dep(nombre, slug) -%}
+{% if slug in menores %}<span data-nosnippet>{{ nombre }}</span>{% else %}{{ nombre }}{% endif %}
 {%- endmacro %}
 
 {% macro cat_url(grupo_slug, cat_slug) -%}
 {{ url_for('vistas.categoria', grupo=grupo_slug, cat=cat_slug) }}
 {%- endmacro %}
 
+{# Nombre de una región, con enlace a su página. #}
 {% macro region(nombre) -%}
-{{ nombre or 'Sin confirmar' }}
+{% if nombre %}<a class="plain" href="{{ url_for('vistas.region', slug=nombre|region_slug) }}">{{ nombre }}</a>{% else %}Sin confirmar{% endif %}
 {%- endmacro %}
 
 {% macro bar(valor, maximo, variante='') -%}
@@ -43,11 +50,12 @@
 <div class="legend"><span><i class="sw-s1-soft"></i>Arrastre (50 % de los puntos del año pasado)</span><span><i class="sw-s1"></i>Puntos ganados en {{ rk.anio }}</span></div>
 {%- endmacro %}
 
-{# Tabla de clubes ordenada por puntos. Con con_nacional=True agrega el puesto en todo el país. #}
-{% macro tabla_clubes(filas, maximo, id='tabla-clubes', con_nacional=False) -%}
+{# Tabla de clubes ordenada por puntos. Con con_nacional=True agrega el puesto en todo el país;
+   columna='comuna' muestra la comuna en vez de la región (útil dentro de una región). #}
+{% macro tabla_clubes(filas, maximo, id='tabla-clubes', con_nacional=False, columna='region') -%}
 <div class="table-wrap">
 <table class="t" id="{{ id }}">
-  <thead><tr><th class="n">#</th><th>Club</th><th>Región</th><th class="n">Puntos</th><th class="w-bar"><span class="sr-only">Gráfico de puntos</span></th>
+  <thead><tr><th class="n">#</th><th>Club</th><th>{{ 'Comuna' if columna == 'comuna' else 'Región' }}</th><th class="n">Puntos</th><th class="w-bar"><span class="sr-only">Gráfico de puntos</span></th>
     <th class="n">Deportistas</th><th class="n" title="Categorías donde el club tiene al 1.º del ranking">1.º</th><th class="n">2.º</th><th class="n">3.º</th>
     <th class="n" title="Deportistas entre los 8 primeros de su categoría">Top 8</th>
     {% if con_nacional %}<th class="n" title="Puesto del club en todo el país">Nacional</th>{% endif %}</tr></thead>
@@ -56,7 +64,7 @@
     <tr data-nombre="{{ c.club_nombre|lower }}">
       <td class="n">{{ c.puesto }}</td>
       <th scope="row">{{ club(c.club_nombre, c.club_slug) }}</th>
-      <td>{{ region(c.region) }}</td>
+      <td>{% if columna == 'comuna' %}{{ c.comuna or c.ciudad or 'Sin confirmar' }}{% else %}{{ region(c.region) }}{% endif %}</td>
       <td class="n"><b>{{ c.puntos|pts }}</b></td>
       <td>{{ bar(c.puntos, maximo) }}</td>
       <td class="n">{{ c.deportistas }}</td>
@@ -68,6 +76,28 @@
   </tbody>
 </table>
 </div>
+{%- endmacro %}
+
+{# Celda de un mapa de calor: seis tonos, del más claro (pocos) al más oscuro (más). #}
+{% macro celda_calor(v, maximo, titulo) -%}
+{% set lvl = 0 if v == 0 else 1 + ((v - 1) * 5 // ([maximo - 1, 1]|max)) %}
+<td class="h h{{ lvl }}" title="{{ titulo }}: {{ v }} {{ v|pl('podio', 'podios') }}">{{ v if v else '·' }}</td>
+{%- endmacro %}
+
+{# Lista numerada de deportistas con barra (figuras). campo = 'total', 'torneos' o 'intl'. #}
+{% macro lista_figuras(lista, campo='total', variante='') -%}
+{% set maximo = lista[0][campo] if lista else 1 %}
+<ol class="rlist">
+  {% for d in lista %}
+  <li>
+    <span class="n">{{ loop.index }}</span>
+    <span class="t"><b>{{ dep(d.deportista, d.dep_slug) }}</b>
+      <small><a href="{{ cat_url(d.grupo_slug, d.cat_slug) }}">{{ d.grupo }} {{ d.sexo_txt|lower }} {{ d.peso }}</a> · {{ d.club_nombre }}</small></span>
+    <span class="v">{{ d[campo]|pts }}</span>
+    {{ bar(d[campo], maximo, variante) }}
+  </li>
+  {% endfor %}
+</ol>
 {%- endmacro %}
 
 {# Filtro por zona: mantiene la página actual y cambia solo ?zona= #}

@@ -4,21 +4,37 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{% block title %}Resumen{% endblock %} · Judo Chile {{ rk.anio if rk }}</title>
-  {% set descripcion = "Ranking nacional de judo de Chile explicado: los clubes y deportistas más destacados, y el ranking de cada edad y peso. Datos oficiales de la federación, actualizados cada semana." %}
+  {% set descripcion = "Ranking nacional de judo de Chile explicado: los clubes, regiones y deportistas más destacados, y el ranking de cada edad y peso. Datos oficiales de la federación, actualizados cada semana." %}
   <meta name="description" content="{{ descripcion }}">
+  {# Buscadores: la dirección de la página, con solo los filtros válidos (sin ?zona=marte ni otros
+     parámetros de más). Las fichas y rankings de menores y los resultados de búsqueda no se indexan. #}
+  {% set url_pagina = url_for(request.endpoint, zona=zona or None, _external=True, **request.view_args) if request.endpoint and request.view_args is not none else request.base_url %}
+  {% if no_indexar %}<meta name="robots" content="noindex">{% else %}<link rel="canonical" href="{{ url_pagina }}">{% endif %}
+  {# Vista previa al compartir el enlace (WhatsApp, redes sociales) #}
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Judo Chile · Ranking nacional">
   <meta property="og:title" content="{{ self.title() }} · Judo Chile {{ rk.anio if rk }}">
   <meta property="og:description" content="{{ descripcion }}">
+  <meta property="og:url" content="{{ url_pagina }}">
+  <meta property="og:image" content="{{ url_for('static', filename='img/compartir.png', _external=True) }}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Judo Chile: el ranking nacional de judo, explicado">
+  <meta property="og:locale" content="es_CL">
+  <meta name="twitter:card" content="summary_large_image">
+  {# Íconos y color de la barra del navegador en el celular #}
   <meta name="theme-color" content="#0f1f3d">
-  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap">
+  <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
+  <link rel="icon" href="{{ url_for('static', filename='img/favicon.png') }}" type="image/png" sizes="48x48">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/apple-touch-icon.png') }}">
+  {# Fuentes precargadas (llegan junto con los estilos y la página no salta) y estilos #}
+  <link rel="preload" href="{{ url_for('static', filename='fuentes/barlow-condensed-700.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='fuentes/source-sans-3.woff2') }}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{{ url_for('static', filename='estilos.css') }}">
 {% block head %}{% endblock %}
 </head>
 <body>
+<a class="saltar" href="#contenido">Saltar al contenido</a>
 <div class="obi" aria-hidden="true"></div>
 <header class="masthead">
   <div class="wrap masthead-row">
@@ -29,20 +45,26 @@
     <nav class="mainnav" aria-label="Secciones">
       {% for clave, texto, destino in [('resumen', 'Resumen', 'vistas.resumen'), ('categorias', 'Categorías', 'vistas.categorias_inicio'),
                                        ('clubes', 'Clubes', 'vistas.clubes'), ('por-clubes', 'Categorías por clubes', 'vistas.por_clubes_inicio'),
-                                       ('metodologia', 'Cómo funciona', 'vistas.metodologia')] %}
+                                       ('regiones', 'Regiones', 'vistas.regiones'), ('metodologia', 'Cómo funciona', 'vistas.metodologia')] %}
       <a href="{{ url_for(destino) }}"{% if seccion == clave %} aria-current="page"{% endif %}>{{ texto }}</a>
       {% endfor %}
     </nav>
-    <form class="search" action="{{ url_for('vistas.buscar') }}" role="search">
+    <form class="search" action="{{ url_for('vistas.buscar') }}" role="search" aria-label="Buscar en el sitio">
       <label class="sr-only" for="q-top">Buscar deportista o club</label>
       <input id="q-top" type="search" name="q" value="{{ q|default('') }}" placeholder="Buscar deportista o club" autocomplete="off">
     </form>
+    {# En el celular, una lupa reemplaza al buscador para ahorrar espacio #}
+    <a class="buscar-movil" href="{{ url_for('vistas.buscar') }}" aria-label="Buscar deportista o club">
+      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
+    </a>
   </div>
 </header>
 {% block subnav %}{% endblock %}
+<main id="contenido" tabindex="-1">
 {% block hero %}{% endblock %}
-<main class="wrap">
+<div class="wrap principal">
 {% block content %}{% endblock %}
+</div>
 </main>
 <footer class="footer">
   <div class="wrap footer-grid">

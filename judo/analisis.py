@@ -1,4 +1,4 @@
-"""Indicadores del ranking: clasificación de clubes, figuras, competitividad, zonas y búsquedas."""
+"""Indicadores del ranking: clasificación de clubes y regiones, figuras, competitividad, zonas y búsquedas."""
 from __future__ import annotations
 
 import datetime as dt
@@ -8,9 +8,9 @@ from dataclasses import dataclass, field
 import pandas as pd
 
 from . import ubicaciones
-from .datos import GRUPOS, SEXOS, SLUG_SIN_CLUB, sin_tildes
+from .datos import GRUPOS, GRUPOS_MENORES, SEXOS, SLUG_SIN_CLUB, sin_tildes
 
-ORDEN_GRUPOS = [v for v in sorted(GRUPOS.values(), key=lambda x: x[1])]  # (etiqueta, orden, slug)
+ORDEN_GRUPOS = sorted(GRUPOS.values(), key=lambda g: g[1])  # (etiqueta, orden, slug), de Sub 13 a Absoluta
 
 SIN_RIVALES = "Sin rivales"  # categoría con un solo deportista: no hay a quién sacarle ventaja
 
@@ -39,20 +39,21 @@ def _memo(fn):
     return envoltura
 
 
-def _conteos(pos: pd.Series) -> dict:
-    return {"oro": int((pos == 1).sum()), "plata": int((pos == 2).sum()),
-            "bronce": int((pos == 3).sum()), "top8": int((pos <= 8).sum())}
+# Cuántas categorías encabeza un club o una región (oro), en cuántas va 2.º o 3.º y cuántos deportistas
+# tiene entre los 8 primeros. Se usa en las tablas de clubes y de regiones.
+MEDALLAS = {
+    "oro": ("pos", lambda s: int((s == 1).sum())),
+    "plata": ("pos", lambda s: int((s == 2).sum())),
+    "bronce": ("pos", lambda s: int((s == 3).sum())),
+    "top8": ("pos", lambda s: int((s <= 8).sum())),
+}
 
 
 def _tabla_clubes(df: pd.DataFrame) -> pd.DataFrame:
     """Clubes ordenados por puntos totales: la suma del puntaje de todos sus deportistas."""
     t = (
         df.groupby("club_slug")
-        .agg(club_nombre=("club_nombre", "first"), region=("region", "first"), zona=("zona", "first"),
-             oro=("pos", lambda s: int((s == 1).sum())),
-             plata=("pos", lambda s: int((s == 2).sum())),
-             bronce=("pos", lambda s: int((s == 3).sum())),
-             top8=("pos", lambda s: int((s <= 8).sum())),
+        .agg(club_nombre=("club_nombre", "first"), region=("region", "first"), zona=("zona", "first"), **MEDALLAS,
              deportistas=("dep_slug", "nunique"),
              puntos=("total", "sum"),
              mejor_pos=("pos", "min"))
@@ -60,6 +61,26 @@ def _tabla_clubes(df: pd.DataFrame) -> pd.DataFrame:
     )
     t["podios"] = t.oro + t.plata + t.bronce
     t = t.sort_values(["puntos", "oro", "plata", "bronce"], ascending=False, kind="stable").reset_index(drop=True)
+    t["lugar"] = t.index + 1
+    return t
+
+
+def _tabla_regiones(df: pd.DataFrame) -> pd.DataFrame:
+    """Regiones ordenadas por puntos totales. Cada deportista cuenta para la región de su club."""
+    d = df[df.region != ""]
+    t = (
+        d.groupby("region")
+        .agg(puntos=("total", "sum"), deportistas=("dep_slug", "nunique"), clubes=("club_slug", "nunique"), **MEDALLAS)
+        .reset_index()
+    )
+    intl = d[d.intl > 0].groupby("region").dep_slug.nunique()
+    t["intl"] = t.region.map(intl).fillna(0).astype(int)
+    t["podios"] = t.oro + t.plata + t.bronce
+    t["por_deportista"] = t.puntos / t.deportistas
+    t["zona"] = t.region.map(ubicaciones.ZONA_DE_REGION)
+    t["slug"] = t.region.map(ubicaciones.SLUG_REGION)
+    t["orden_geo"] = t.region.map(ubicaciones.REGIONES.index)
+    t = t.sort_values(["puntos", "oro"], ascending=False, kind="stable").reset_index(drop=True)
     t["lugar"] = t.index + 1
     return t
 
@@ -90,26 +111,45 @@ def _resumen_categorias(df: pd.DataFrame, col_pos: str = "pos") -> pd.DataFrame:
 
 @dataclass
 class Ranking:
+    """Todos los indicadores que muestra el sitio, calculados a partir de una versión de las planillas.
+
+    df tiene una fila por deportista y categoría (ver datos.cargar_directorio). Las tablas de clubes,
+    regiones y categorías se arman al crearlo; el resto se calcula cuando una página lo pide y queda
+    guardado (_memo) hasta la próxima actualización de los datos.
+    """
     df: pd.DataFrame
     anio: int
     fecha_datos: dt.date
     cats: pd.DataFrame = field(init=False)
     clubes: pd.DataFrame = field(init=False)
+    regiones_t: pd.DataFrame = field(init=False, repr=False)
     fichas: dict = field(init=False, repr=False)
+    menores: frozenset = field(init=False, repr=False)
     _cache: dict = field(init=False, default_factory=dict, repr=False)
 
     def __post_init__(self):
         self.cats = _resumen_categorias(self.df)
+        # Quien aparece en alguna edad de menores (aunque también compita en Sub 21 o Absoluta)
+        self.menores = frozenset(self.df.loc[self.df.grupo_slug.isin(GRUPOS_MENORES), "dep_slug"])
         self.fichas = ubicaciones.cargar()
         clubes = _tabla_clubes(self.df[self.df.con_club])
         clave = self.df[self.df.con_club].drop_duplicates("club_slug").set_index("club_slug").club
         clubes["ciudad"] = clubes.club_slug.map(lambda s: self.fichas.get(clave[s], {}).get("ciudad", ""))
+        clubes["comuna"] = clubes.club_slug.map(lambda s: self.fichas.get(clave[s], {}).get("comuna", ""))
         self.clubes = clubes
+
+        regiones = _tabla_regiones(self.df[self.df.con_club])
+        mejor = clubes[clubes.region != ""].drop_duplicates("region").set_index("region")  # clubes ya viene ordenado
+        regiones["mejor_club"] = regiones.region.map(mejor.club_nombre)
+        regiones["mejor_club_slug"] = regiones.region.map(mejor.club_slug)
+        regiones["mejor_club_puntos"] = regiones.region.map(mejor.puntos)
+        self.regiones_t = regiones
 
     def precalcular(self):
         """Calcula la portada al cargar los datos, para que ninguna visita espere."""
         for f in (self.resumen, self.mapa_podios, self.mejores_por_grupo, self.figuras,
-                  self.pelea_primer_lugar, self.multi_edad, self.participacion, self.grupos, self.lista_clubes):
+                  self.pelea_primer_lugar, self.multi_edad, self.participacion, self.grupos, self.lista_clubes,
+                  self.regiones, self.regiones_geo, self.mapa_regiones, self.resumen_regiones):
             f()
         return self
 
@@ -118,6 +158,7 @@ class Ranking:
     # ------------------------------------------------------------------
     @_memo
     def resumen(self) -> dict:
+        """Cifras generales del país (portada y "Cómo funciona")."""
         df, con = self.df, self.df[self.df.con_club]
         return {
             "deportistas": df.dep_slug.nunique(),
@@ -144,6 +185,7 @@ class Ranking:
 
     @_memo
     def mejores_por_grupo(self, n=3) -> list[dict]:
+        """Los n clubes con más puntos en cada grupo de edad."""
         con = self.df[self.df.con_club]
         out = []
         for etiqueta, _, gslug in ORDEN_GRUPOS:
@@ -153,8 +195,13 @@ class Ranking:
 
     @_memo
     def figuras(self, n=10) -> dict:
+        """Los n deportistas con más puntos: en total, ganados este año y en el ranking internacional.
+        Cada uno aparece una vez, con su mejor categoría."""
         df = self.df
-        unico = lambda d, col: d.sort_values(col, ascending=False, kind="stable").drop_duplicates("dep_slug").head(n)
+
+        def unico(d, col):
+            return d.sort_values(col, ascending=False, kind="stable").drop_duplicates("dep_slug").head(n)
+
         return {
             "total": unico(df, "total").to_dict("records"),
             "temporada": unico(df, "torneos").to_dict("records"),
@@ -163,6 +210,7 @@ class Ranking:
 
     @_memo
     def pelea_primer_lugar(self, n=6) -> dict:
+        """Las categorías donde el 1.º le saca más ventaja al 2.º, y las más parejas (con 3 deportistas o más)."""
         c = self.cats[(self.cats.inscritos >= 3) & (self.cats.p1 > 0)]
         return {
             "dominadas": c.sort_values("ventaja", ascending=False).head(n).to_dict("records"),
@@ -174,10 +222,10 @@ class Ranking:
         """Deportistas en el podio de más de un grupo de edad."""
         podio = self.df[self.df.pos <= 3]
         out = []
-        for _, g in podio.groupby("dep_slug"):
-            if g.grupo.nunique() < 2:
+        for _, podios in podio.groupby("dep_slug"):
+            if podios.grupo.nunique() < 2:
                 continue
-            g = g.sort_values("orden_grupo")
+            g = podios.sort_values("orden_grupo")
             out.append({"deportista": g.deportista.iloc[0], "slug": g.dep_slug.iloc[0],
                         "club": g.club_nombre.iloc[0], "club_slug": g.club_slug.iloc[0],
                         "lugares": g[["pos", "grupo", "peso", "grupo_slug", "cat_slug"]].to_dict("records"),
@@ -187,6 +235,7 @@ class Ranking:
 
     @_memo
     def participacion(self) -> list[dict]:
+        """Cuántas mujeres y cuántos hombres hay en el ranking de cada grupo de edad."""
         t = self.df.drop_duplicates(["dep_slug", "grupo"]).groupby(["grupo", "sexo"]).size().unstack(fill_value=0)
         return [{"grupo": e, "slug": s, "F": int(t.loc[e].get("F", 0)), "M": int(t.loc[e].get("M", 0))}
                 for e, _, s in ORDEN_GRUPOS if e in t.index]
@@ -196,6 +245,7 @@ class Ranking:
     # ------------------------------------------------------------------
     @_memo
     def _df_zona(self, zona: str) -> pd.DataFrame:
+        """Deportistas de clubes de la zona, con su lugar entre ellos (pos_zona)."""
         d = self.df[self.df.zona == zona].copy()
         d["pos_zona"] = d.groupby("cat_id").cumcount() + 1  # df ya viene ordenado por puntaje
         return d
@@ -222,16 +272,20 @@ class Ranking:
     # ------------------------------------------------------------------
     @_memo
     def grupos(self) -> list[tuple]:
+        """Grupos de edad que traen las planillas, en orden: (etiqueta, orden, slug)."""
         return [g for g in ORDEN_GRUPOS if g[0] in set(self.cats.grupo)]
 
     @_memo
     def categorias_de(self, grupo_slug: str, zona: str = "") -> dict[str, list[dict]]:
+        """Categorías de peso de un grupo de edad, separadas en Mujeres y Hombres."""
         cats = self._cats_zona(zona) if zona else self.cats
         c = cats[cats.grupo_slug == grupo_slug].sort_values(["sexo", "kg"])
         return {SEXOS[s]: c[c.sexo == s].to_dict("records") for s in ("F", "M") if (c.sexo == s).any()}
 
     @_memo
     def categoria(self, grupo_slug: str, cat_slug: str, zona: str = ""):
+        """(resumen de la categoría, sus deportistas en orden). Con zona, solo los de clubes de esa zona.
+        (None, []) si la categoría no existe."""
         cid = f"{grupo_slug}/{cat_slug}"
         cats = self._cats_zona(zona) if zona else self.cats
         fila = cats[cats.cat_id == cid]
@@ -249,6 +303,7 @@ class Ranking:
     # ------------------------------------------------------------------
     @_memo
     def lista_clubes(self, zona: str = "") -> list[dict]:
+        """Clubes ordenados por puntos totales (del país o de una zona)."""
         t = self.clubes[self.clubes.zona == zona] if zona else self.clubes
         filas = t.to_dict("records")
         for i, f in enumerate(filas, 1):
@@ -277,6 +332,7 @@ class Ranking:
 
     @_memo
     def club(self, club_slug: str):
+        """Ficha de un club: ubicación, medallas, presencia por edad y todos sus deportistas (None si no existe)."""
         filas = self.df[self.df.club_slug == club_slug]
         if filas.empty:
             return None
@@ -304,23 +360,132 @@ class Ranking:
         return info
 
     # ------------------------------------------------------------------
+    # Regiones (cada deportista cuenta para la región de su club)
+    # ------------------------------------------------------------------
+    @_memo
+    def regiones(self, zona: str = "") -> list[dict]:
+        """Regiones ordenadas por puntos totales (del país o de una zona)."""
+        t = self.regiones_t[self.regiones_t.zona == zona] if zona else self.regiones_t
+        filas = t.to_dict("records")
+        for i, f in enumerate(filas, 1):
+            f["puesto"] = i  # puesto dentro de la lista mostrada (nacional o de la zona)
+        return filas
+
+    @_memo
+    def regiones_geo(self, zona: str = "") -> list[dict]:
+        """Regiones de norte a sur, agrupadas por zona."""
+        filas = sorted(self.regiones(zona), key=lambda f: f["orden_geo"])
+        grupos = [{"zona": z, "nombre": nombre, "filas": [f for f in filas if f["zona"] == z]}
+                  for z, nombre in ubicaciones.ZONAS]
+        return [g for g in grupos if g["filas"]]
+
+    @_memo
+    def resumen_regiones(self, zona: str = "") -> dict:
+        """Cifras destacadas de la sección Regiones: la que más suma, el mejor promedio, la zona más fuerte."""
+        filas = self.regiones(zona)
+        if not filas:
+            return {}
+        zonas = self.regiones_t.groupby("zona").puntos.sum().sort_values(ascending=False)
+        return {
+            "n": len(filas),
+            "top": filas[0],
+            "mejor_promedio": max(filas, key=lambda f: f["por_deportista"]),
+            "mas_clubes": max(filas, key=lambda f: f["clubes"]),
+            "zona_top": {"zona": zonas.index[0], "nombre": ubicaciones.NOMBRE_ZONA[zonas.index[0]],
+                         "puntos": float(zonas.iloc[0])},
+            "zonas": [{"zona": z, "nombre": ubicaciones.NOMBRE_ZONA[z], "puntos": float(p)} for z, p in zonas.items()],
+        }
+
+    @_memo
+    def mapa_regiones(self, zona: str = "") -> dict:
+        """Podios (1.º a 3.º) de cada región en cada grupo de edad, de norte a sur."""
+        filas = sorted(self.regiones(zona), key=lambda f: f["orden_geo"])
+        con = self.df[self.df.con_club & (self.df.pos <= 3) & (self.df.region != "")]
+        tabla = con.groupby(["region", "grupo"]).size().unstack(fill_value=0)
+        tabla = tabla.reindex(index=[f["region"] for f in filas], columns=[g[0] for g in ORDEN_GRUPOS], fill_value=0)
+        return {"grupos": ORDEN_GRUPOS, "max": max(int(tabla.values.max()) if len(tabla) else 0, 1),
+                "filas": [{"region": f["region"], "slug": f["slug"], "valores": [int(v) for v in tabla.loc[f["region"]]]}
+                          for f in filas]}
+
+    @_memo
+    def _regiones_por_grupo(self) -> dict:
+        """Tabla de regiones de cada grupo de edad (para el puesto de una región en cada edad)."""
+        con = self.df[self.df.con_club]
+        return {etiqueta: _tabla_regiones(con[con.grupo == etiqueta]) for etiqueta, _, _ in ORDEN_GRUPOS}
+
+    @_memo
+    def region(self, slug: str):
+        """Ficha de una región: puesto en el país y en su zona, puesto por edad, figuras y clubes (None si no existe)."""
+        nombre = ubicaciones.REGION_DE_SLUG.get(slug)
+        fila = self.regiones_t[self.regiones_t.region == nombre] if nombre else self.regiones_t.iloc[0:0]
+        if fila.empty:
+            return None
+        info = fila.iloc[0].to_dict()
+        info["nombre_largo"] = ubicaciones.nombre_largo(nombre)
+        info["zona_nombre"] = ubicaciones.NOMBRE_ZONA[info["zona"]]
+        de_zona = self.regiones(info["zona"])
+        info["puesto_zona"] = next(f["puesto"] for f in de_zona if f["region"] == nombre)
+        info["n_zona"] = len(de_zona)
+        info["n_regiones"] = len(self.regiones_t)
+
+        clubes = self.clubes[self.clubes.region == nombre].to_dict("records")
+        for i, c in enumerate(clubes, 1):
+            c["puesto"] = i
+        info["clubes_lista"] = clubes
+
+        d = self.df[self.df.con_club & (self.df.region == nombre)]
+        info["numeros_uno"] = d[d.pos == 1].sort_values(["orden_grupo", "sexo", "kg"]).to_dict("records")
+        info["figuras"] = (d.sort_values("total", ascending=False, kind="stable")
+                           .drop_duplicates("dep_slug").head(10).to_dict("records"))
+        por_edad = []
+        for etiqueta, _, gslug in ORDEN_GRUPOS:
+            tg = self._regiones_por_grupo()[etiqueta]
+            f = tg[tg.region == nombre]
+            x = f.iloc[0] if not f.empty else None
+            por_edad.append({"grupo": etiqueta, "slug": gslug, "n": len(tg),
+                             "puesto": int(x.lugar) if x is not None else None,
+                             "puntos": float(x.puntos) if x is not None else 0.0,
+                             "deportistas": int(x.deportistas) if x is not None else 0,
+                             "podios": int(x.podios) if x is not None else 0})
+        info["por_edad"] = por_edad
+        return info
+
+    # ------------------------------------------------------------------
     # Deportistas y búsqueda
     # ------------------------------------------------------------------
     @_memo
     def deportista(self, dep_slug: str):
+        """Ficha de un deportista: sus categorías, mejores lugares y las fichas con su mismo nombre (None si no existe)."""
         filas = self.df[self.df.dep_slug == dep_slug]
         if filas.empty:
             return None
+        mismo_nombre = self.df[(self.df.dep_nombre_slug == filas.dep_nombre_slug.iloc[0]) & (self.df.dep_slug != dep_slug)]
+        homonimos = mismo_nombre.drop_duplicates("dep_slug")[["dep_slug", "deportista", "club_nombre"]].to_dict("records")
         filas = filas.merge(self.cats[["cat_id", "inscritos", "p1"]], on="cat_id").sort_values("orden_grupo")
+        # La planilla oficial a veces anota dos veces a la misma persona en una categoría
+        filas["repetida"] = filas.cat_id.duplicated(keep=False)
         clubes = filas.drop_duplicates("club_slug")[["club_nombre", "club_slug", "region"]].to_dict("records")
         return {
             "nombre": filas.deportista.iloc[0], "sexo_txt": filas.sexo_txt.iloc[0], "clubes": clubes,
             "mejor_pos": int(filas.pos.min()), "max_total": float(filas.total.max()),
             "max_intl": float(filas.intl.max()), "n_intl": int(filas.n_intl.max()),
-            "n_torneos": int(filas.n_torneos.max()), "filas": filas.to_dict("records"),
+            "n_torneos": int(filas.n_torneos.max()), "filas": filas.to_dict("records"), "homonimos": homonimos,
         }
 
+    def ficha_vigente(self, slug: str):
+        """Para enlaces viejos: la dirección de una ficha cambia cuando aparece (o deja de haber) alguien
+        con el mismo nombre en otro club. Entrega ("ficha", slug), ("buscar", nombre) o None."""
+        d = self.df
+        mismo_nombre = d[d.dep_nombre_slug == slug]
+        if not mismo_nombre.empty:  # ahora hay una ficha por club: la búsqueda las muestra todas
+            return "buscar", mismo_nombre.deportista.iloc[0]
+        unicas = d[d.dep_slug == d.dep_nombre_slug]
+        antes = unicas[unicas.dep_slug + "-" + unicas.club_slug == slug]
+        return ("ficha", antes.dep_slug.iloc[0]) if not antes.empty else None
+
     def buscar(self, q: str, limite=60) -> dict:
+        """Clubes y deportistas cuyo nombre (o club) contiene todas las palabras buscadas, sin importar
+        tildes ni mayúsculas. Cada deportista aparece una vez, con su mejor categoría."""
         terms = sin_tildes(q.lower()).split()
         if not terms or len("".join(terms)) < 2:
             return {"clubes": [], "deportistas": [], "total": 0}
